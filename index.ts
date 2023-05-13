@@ -1,33 +1,33 @@
-import express, { Express, Request, Response } from "express";
+import express, { Express } from "express";
 import dotenv from "dotenv";
-import { ConfigParams, auth, requiresAuth } from "express-openid-connect";
 import helmet from "helmet";
 import cors from "cors";
 import bodyParser from "body-parser";
 
 import authRoutes from "./src/router/authRoutes";
-import { isAdmin } from "./src/middleware/isAdmin";
-
-const config: ConfigParams = {
-	authRequired: false,
-	auth0Logout: true,
-	baseURL: "http://localhost:3000",
-	clientID: process.env.AUTH0_CLIENT_ID,
-	issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}`,
-	secret: process.env.AUTH0_SECRET,
-};
+import { isAdmin, isAuthenticated } from "./src/middleware/isAdmin";
+import jwtCheck from "./src/middleware/jwtCheck";
+import { managementClient } from "./src/auth/auth0Client";
 
 dotenv.config();
 
 const app: Express = express();
 const port = process.env.PORT;
 
-// auth router attaches /login, /logout, and /callback routes to the baseURL
-app.use(auth(config));
-
 app.use(helmet());
 
-app.use(cors());
+const reactAppOrigin = "http://localhost:3000";
+
+const corsOptions = {
+	origin: reactAppOrigin,
+	allowedHeaders: ["Content-Type", "Authorization"],
+	methods: ["GET", "POST", "PUT", "DELETE"],
+};
+
+app.use(cors(corsOptions));
+
+app.use(jwtCheck);
+app.use(isAuthenticated);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
@@ -35,14 +35,30 @@ app.use(express.json());
 app.use("/auth", authRoutes);
 
 app.get("/", (req, res) => {
-	res.send(req.oidc.isAuthenticated() ? "Logged in" : "Logged out");
+	res.status(200).json({
+		message: "Hello from server!",
+	});
 });
 
-app.get("/profile", requiresAuth(), (req, res) => {
-	res.send(JSON.stringify(req.oidc.user));
+app.get("/profile", async (req, res) => {
+	if (!req.auth || !req.auth.payload.sub) {
+		return res.status(401).json({ message: "Unauthorized" });
+	}
+	const token = req.auth.payload.sub;
+
+	const user = await managementClient.getUser({
+		id: token,
+	});
+
+	if (user) {
+		return res.status(200).json(user);
+	}
+
+	return res.status(500).json({ message: "Error getting user" });
 });
 
 app.get("/admin", isAdmin, (req, res) => {
+	console.log(req.isAuthenticated());
 	res.send("Hello from admin!");
 });
 

@@ -35,9 +35,7 @@ router.post("/register", async (req, res) => {
 		res.status(201).json({ message: "User created", user });
 	} catch (error) {
 		console.error("Error creating user:", error);
-		res
-			.status(500)
-			.json({ message: "Error creating user", error: error["message"] });
+		res.status(500).json({ message: "Error creating user", error: error });
 	}
 });
 
@@ -56,7 +54,7 @@ router.post("/delete/user", isAdmin, async (req, res) => {
 		console.error("Error deleting user:", error);
 		res.status(500).json({
 			message: "Error deleting user",
-			error: error["message"],
+			error: error,
 		});
 	}
 });
