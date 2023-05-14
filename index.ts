@@ -1,22 +1,28 @@
-import express, { Express } from "express";
+import express, { Express, Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import cors from "cors";
 import bodyParser from "body-parser";
+import fs from "fs";
+import https from "https";
+import expressWinston from "express-winston";
 
 import authRoutes from "./src/router/authRoutes";
 import { isAdmin, isAuthenticated } from "./src/middleware/isAdmin";
 import jwtCheck from "./src/middleware/jwtCheck";
 import { managementClient } from "./src/auth/auth0Client";
+import assignId from "./src/middleware/requestId";
+import logger from "./src/logger/winston";
 
 dotenv.config();
 
 const app: Express = express();
 const port = process.env.PORT;
+const logLevel = process.env.LOG_LEVEL || "info";
 
-app.use(helmet());
+const winstonLogger = logger(logLevel);
 
-const reactAppOrigin = "http://localhost:3000";
+const reactAppOrigin = "https://localhost:3000";
 
 const corsOptions = {
 	origin: reactAppOrigin,
@@ -24,13 +30,38 @@ const corsOptions = {
 	methods: ["GET", "POST", "PUT", "DELETE"],
 };
 
+// jwtCheck middleware will check for a valid JWT on the Authorization header, and attach the decoded token to the request object.
+app.use(jwtCheck);
+
+// Helmet helps secure Express apps by setting HTTP response headers.
+app.use(helmet());
+
+// Enable CORS
 app.use(cors(corsOptions));
 
-app.use(jwtCheck);
-app.use(isAuthenticated);
+// Parse JSON bodies for this app
 app.use(bodyParser.json());
+
+// Parse URL-encoded bodies
 app.use(bodyParser.urlencoded({ extended: true }));
+
 app.use(express.json());
+
+// Set request ID
+app.use(assignId);
+
+// Log requests
+app.use(
+	expressWinston.logger({
+		winstonInstance: winstonLogger,
+		meta: false,
+		msg: (req, res) =>
+			`Request ID: ${req.id} - HTTP ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
+	})
+);
+
+// isAuthenticated middleware will check if the user is authenticated and attach the isAuthenticated method to the request object.
+app.use(isAuthenticated);
 
 app.use("/auth", authRoutes);
 
@@ -58,10 +89,16 @@ app.get("/profile", async (req, res) => {
 });
 
 app.get("/admin", isAdmin, (req, res) => {
-	console.log(req.isAuthenticated());
 	res.send("Hello from admin!");
 });
 
-app.listen(port, () => {
-	console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== "production") {
+	const key = fs.readFileSync("./certs/localhost-key.pem");
+	const cert = fs.readFileSync("./certs/localhost.pem");
+
+	https.createServer({ key, cert }, app).listen(3001);
+} else {
+	app.listen(port, () => {
+		console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
+	});
+}
