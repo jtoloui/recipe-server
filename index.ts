@@ -8,13 +8,15 @@ import https from 'https';
 import expressWinston from 'express-winston';
 
 import authRoutes from './src/routes/authRoutes';
-import { isAuthenticated } from './src/middleware/isAdmin';
-import jwtCheck from './src/middleware/jwtCheck';
 import assignId from './src/middleware/requestId';
 import logger from './src/logger/winston';
 import { connectDB } from './src/db';
 import recipeRoutes from './src/routes/recipeRoutes';
 import { corsOptions } from './src/utils/cors';
+import { auth } from 'express-openid-connect';
+import { config } from './src/utils/authConfig';
+
+// auth router attaches /login, /logout, and /callback routes to the baseURL
 
 dotenv.config();
 
@@ -25,10 +27,11 @@ const port = process.env.PORT;
 const logLevel = process.env.LOG_LEVEL || 'info';
 const winstonLogger = logger(logLevel);
 
+// middleware - auth
+app.use(auth(config));
+
 // middleware - custom
-app.use(jwtCheck);
 app.use(assignId);
-app.use(isAuthenticated);
 
 // middleware - third party
 app.use(helmet());
@@ -41,7 +44,7 @@ app.use(
     winstonInstance: winstonLogger,
     meta: false,
     msg: (req, res) =>
-      `UserId: ${req.auth?.payload.sub} - Request ID: ${req.id} - HTTP ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
+      `UserId: ${req.oidc.user?.sub} - Request ID: ${req.id} - HTTP ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
   })
 );
 
