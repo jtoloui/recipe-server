@@ -6,16 +6,18 @@ import bodyParser from 'body-parser';
 import fs from 'fs';
 import https from 'https';
 import expressWinston from 'express-winston';
+import { auth } from 'express-openid-connect';
 
-import authRoutes from './src/routes/authRoutes';
 import assignId from './src/middleware/requestId';
 import logger from './src/logger/winston';
 import { connectDB } from './src/db';
-import recipeRoutes from './src/routes/recipeRoutes';
 import { corsOptions } from './src/utils/cors';
-import { auth } from 'express-openid-connect';
 import { config } from './src/utils/authConfig';
 
+// routes
+import recipeRoutes from './src/routes/recipeRoutes';
+import authRoutes from './src/routes/authRoutes';
+import profileRoutes from './src/routes/profileRoutes';
 // auth router attaches /login, /logout, and /callback routes to the baseURL
 
 dotenv.config();
@@ -51,6 +53,7 @@ app.use(
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api', recipeRoutes);
+app.use('/api/profile', profileRoutes);
 
 if (process.env.NODE_ENV !== 'production') {
   const key = fs.readFileSync('./certs/localhost-key.pem');

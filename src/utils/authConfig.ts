@@ -15,7 +15,7 @@ export const config: ConfigParams = {
   routes: {
     login: false,
     logout: '/auth/logout',
-    postLogoutRedirect: process.env.WEB_APP_URI || '',
+    postLogoutRedirect: `${process.env.WEB_APP_URI}/login` || '',
   },
   session: {
     cookie: {
