@@ -87,7 +87,8 @@ export class RecipeController {
           },
         },
       ]);
-      return res.status(200).json(labels);
+
+      return res.status(200).json({ ...labels[0] });
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
       return res.status(500).json({ message: 'Error retrieving labels' });
@@ -99,8 +100,23 @@ export class RecipeController {
     res: Response
   ) => {
     try {
-      this.logger.info(`Request ID: ${req.id} - ${req.params.label}`);
-      const recipes = await RecipeModel.find({ labels: req.params.label });
+      const { label } = req.params;
+
+      const findReturnItems = {
+        name: 1,
+        labels: 1,
+        imageSrc: 1,
+      };
+      this.logger.info(`Request ID: ${req.id} - ${label}`);
+
+      if (label.toLocaleLowerCase() === 'all') {
+        const recipes = await RecipeModel.find({}, findReturnItems);
+        return res.status(200).json(recipes);
+      }
+      const recipes = await RecipeModel.find(
+        { labels: label },
+        findReturnItems
+      );
       return res.status(200).json(recipes);
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
