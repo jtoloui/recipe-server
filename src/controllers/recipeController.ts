@@ -102,10 +102,14 @@ export class RecipeController {
     try {
       const { label } = req.params;
 
-      const findReturnItems = {
+      const findReturnItems: {
+        [K in keyof Partial<RecipeAttributes>]: number;
+      } = {
         name: 1,
         labels: 1,
         imageSrc: 1,
+        ingredients: 1,
+        timeToCook: 1,
       };
       this.logger.info(`Request ID: ${req.id} - ${label}`);
 
