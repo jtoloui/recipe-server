@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { RecipeController } from '../controllers/recipeController';
 import { isAuthenticated } from '../middleware/isAdmin';
+import jwtCheck from '../middleware/jwtCheck';
 
 const router = Router();
 const recipeController = new RecipeController();
