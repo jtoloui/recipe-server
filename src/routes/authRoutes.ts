@@ -1,10 +1,10 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { managementClient } from '../auth/auth0Client';
-// import { isAdmin } from '../middleware/isAdmin';
+import { isAdmin } from '../middleware/isAdmin';
 
 const router = express.Router();
 
-router.post('/register', async (req, res) => {
+router.post('/register', async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
@@ -39,7 +39,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/delete/user', async (req, res) => {
+router.post('/delete/user', isAdmin, async (req: Request, res: Response) => {
   const { id } = req.body;
 
   try {
@@ -59,7 +59,7 @@ router.post('/delete/user', async (req, res) => {
   }
 });
 
-router.get('/users', async (req, res) => {
+router.get('/users', isAdmin, async (req: Request, res: Response) => {
   try {
     const users = await managementClient.getUsers();
 
@@ -70,11 +70,11 @@ router.get('/users', async (req, res) => {
   }
 });
 
-router.get('/login', (req, res) => {
+router.get('/login', (req: Request, res: Response) => {
   res.oidc.login({ returnTo: 'https://localhost:3000' });
 });
 
-router.get('/authenticated', (req, res) => {
+router.get('/authenticated', (req: Request, res: Response) => {
   if (req.oidc.isAuthenticated()) {
     return res.json({ isAuthenticated: true });
   } else {

@@ -1,4 +1,5 @@
 import { ConfigParams } from 'express-openid-connect';
+import { authenticationClient } from '../auth/auth0Client';
 
 export const config: ConfigParams = {
   authRequired: false,
@@ -23,5 +24,17 @@ export const config: ConfigParams = {
       httpOnly: true,
     },
     name: 'session_token',
+  },
+  afterCallback: async (req, res, session, decodedState) => {
+    const userProfile = await authenticationClient.getProfile(
+      session.access_token
+    );
+
+    return {
+      ...session,
+      userProfile: {
+        ...userProfile,
+      }, // access using `req.session_token.userProfile
+    };
   },
 };

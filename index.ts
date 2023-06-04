@@ -18,7 +18,6 @@ import { config } from './src/utils/authConfig';
 import recipeRoutes from './src/routes/recipeRoutes';
 import authRoutes from './src/routes/authRoutes';
 import profileRoutes from './src/routes/profileRoutes';
-// auth router attaches /login, /logout, and /callback routes to the baseURL
 
 dotenv.config();
 
@@ -45,6 +44,15 @@ app.use(
   expressWinston.logger({
     winstonInstance: winstonLogger,
     meta: false,
+    level: (req, res) => {
+      let level = 'info';
+      if (res.statusCode >= 400 && res.statusCode < 500) {
+        level = 'warn';
+      } else if (res.statusCode >= 500) {
+        level = 'error';
+      }
+      return level;
+    },
     msg: (req, res) =>
       `UserId: ${req.oidc.user?.sub} - Request ID: ${req.id} - HTTP ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
   })
