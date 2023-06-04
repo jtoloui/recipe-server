@@ -15,7 +15,7 @@ import { corsOptions } from './src/utils/cors';
 import { config } from './src/utils/authConfig';
 
 // routes
-import recipeRoutes from './src/routes/recipeRoutes';
+import apiRoutes from './src/routes/apiRoutes';
 import authRoutes from './src/routes/authRoutes';
 import profileRoutes from './src/routes/profileRoutes';
 
@@ -24,6 +24,7 @@ dotenv.config();
 connectDB();
 const app: Express = express();
 const port = process.env.PORT;
+
 // winston logger
 const logLevel = process.env.LOG_LEVEL || 'info';
 const winstonLogger = logger(logLevel);
@@ -40,11 +41,13 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
+
+// Middleware to log HTTP requests
 app.use(
   expressWinston.logger({
     winstonInstance: winstonLogger,
     meta: false,
-    level: (req, res) => {
+    level: (_, res) => {
       let level = 'info';
       if (res.statusCode >= 400 && res.statusCode < 500) {
         level = 'warn';
@@ -54,14 +57,16 @@ app.use(
       return level;
     },
     msg: (req, res) =>
-      `UserId: ${req.oidc.user?.sub} - Request ID: ${req.id} - HTTP ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
+      `UserId: ${req.oidc.user?.sub || 'N/A'} - Request ID: ${req.id} - HTTP ${
+        req.method
+      } ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
   })
 );
 
 // Routes
 app.use('/auth', authRoutes);
-app.use('/api', recipeRoutes);
-app.use('/api/profile', profileRoutes);
+app.use('/api', apiRoutes);
+// app.use('/api/profile', profileRoutes);
 
 if (process.env.NODE_ENV !== 'production') {
   const key = fs.readFileSync('./certs/localhost-key.pem');

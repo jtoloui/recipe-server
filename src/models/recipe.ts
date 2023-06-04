@@ -1,19 +1,22 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 interface TimeToCook {
-  Cook: string;
-  Prep: string;
+  Cook: number;
+  Prep: number;
+  totalMinutes: number;
+  totalHours: number;
+  totalDays: number;
 }
 
 interface Nutrition {
-  kcal: string;
-  sugars: string;
-  salt: string;
-  carbs: string;
-  protein: string;
-  fat: string;
-  saturates: string;
-  fibre: string;
+  kcal: number;
+  sugars: number;
+  salt: number;
+  carbs: number;
+  protein: number;
+  fat: number;
+  saturates: number;
+  fibre: number;
 }
 
 interface Ingredient {
@@ -42,20 +45,38 @@ export interface RecipeAttributes {
   creatorAuth0Sub: string;
 }
 
-const timeToCookSchema = new Schema<TimeToCook>({
-  Cook: String,
-  Prep: String,
+const timeToCookSchema = new Schema<TimeToCook>(
+  {
+    Cook: Number,
+    Prep: Number,
+  },
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
+
+timeToCookSchema.virtual('totalMinutes').get(function (this: TimeToCook) {
+  return this.Cook + this.Prep;
+});
+
+timeToCookSchema.virtual('totalHours').get(function (this: TimeToCook) {
+  return (this.Cook + this.Prep) / 60;
+});
+
+timeToCookSchema.virtual('totalDays').get(function (this: TimeToCook) {
+  return (this.Cook + this.Prep) / (60 * 24);
 });
 
 const nutritionSchema = new Schema<Nutrition>({
-  kcal: String,
-  sugars: String,
-  salt: String,
-  carbs: String,
-  protein: String,
-  fat: String,
-  saturates: String,
-  fibre: String,
+  kcal: Number,
+  sugars: Number,
+  salt: Number,
+  carbs: Number,
+  protein: Number,
+  fat: Number,
+  saturates: Number,
+  fibre: Number,
 });
 
 const ingredientSchema = new Schema<Ingredient>({

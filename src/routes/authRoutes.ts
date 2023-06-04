@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { managementClient } from '../auth/auth0Client';
-import { isAdmin } from '../middleware/isAdmin';
+import { isAdmin } from '../middleware/auth';
 
 const router = express.Router();
 

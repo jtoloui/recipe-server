@@ -115,13 +115,27 @@ export class RecipeController {
 
       if (label.toLocaleLowerCase() === 'all') {
         const recipes = await RecipeModel.find({}, findReturnItems);
-        return res.status(200).json(recipes);
+        const recipesWithTotalTime = recipes.map((recipe) => {
+          const totalHours = recipe.timeToCook.totalHours;
+          const totalMinutes = recipe.timeToCook.totalMinutes;
+          const totalTime =
+            totalHours >= 1 ? `${totalHours} hrs` : `${totalMinutes} mins`;
+          return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
+        });
+        return res.status(200).json(recipesWithTotalTime);
       }
       const recipes = await RecipeModel.find(
         { labels: label },
         findReturnItems
       );
-      return res.status(200).json(recipes);
+      const recipesWithTotalTime = recipes.map((recipe) => {
+        const totalHours = recipe.timeToCook.totalHours;
+        const totalMinutes = recipe.timeToCook.totalMinutes;
+        const totalTime =
+          totalHours >= 1 ? `${totalHours} hrs` : `${totalMinutes} mins`;
+        return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
+      });
+      return res.status(200).json(recipesWithTotalTime);
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
       return res.status(500).json({ message: 'Error retrieving recipes' });
