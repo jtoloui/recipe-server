@@ -13,7 +13,6 @@ export class ProfileController {
   getProfile = async (req: Request, res: Response) => {
     try {
       const profile = await req.oidc.user;
-      console.log(profile);
 
       return res.status(200).json({
         name: profile?.name,

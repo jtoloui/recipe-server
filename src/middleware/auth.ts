@@ -36,7 +36,6 @@ export const isAuthenticated = async (
 ) => {
   try {
     const isAuthenticated = await req.oidc.isAuthenticated();
-    console.log(isAuthenticated);
 
     if (!isAuthenticated) {
       throw new Error('User is not authenticated');

@@ -30,8 +30,6 @@ router.post('/register', async (req: Request, res: Response) => {
       id: user.user_id || '',
     });
 
-    console.log(roles, assigned);
-
     res.status(201).json({ message: 'User created', user });
   } catch (error) {
     console.error('Error creating user:', error);
