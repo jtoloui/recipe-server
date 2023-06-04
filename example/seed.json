@@ -1,0 +1,1055 @@
+[
+  {
+    "name": "Spaghetti Bolognese",
+    "imageSrc": "spaghetti.jpg",
+    "recipeAuthor": "John Doe",
+    "timeToCook": {
+      "Cook": 40,
+      "Prep": 20
+    },
+    "difficulty": "Medium",
+    "labels": [
+      "Italian",
+      "Pasta"
+    ],
+    "portions": "4",
+    "description": "Classic spaghetti with meat sauce",
+    "nutrition": {
+      "kcal": 500,
+      "sugars": 8,
+      "salt": 2,
+      "carbs": 60,
+      "protein": 25,
+      "fat": 15,
+      "saturates": 5,
+      "fibre": 8
+    },
+    "ingredients": [
+      {
+        "item": "Spaghetti",
+        "measurement": "grams",
+        "quantity": 300
+      },
+      {
+        "item": "Ground beef",
+        "measurement": "grams",
+        "quantity": 500
+      },
+      {
+        "item": "Onion",
+        "measurement": "small",
+        "quantity": 1
+      },
+      {
+        "item": "Garlic",
+        "measurement": "cloves",
+        "quantity": 2
+      },
+      {
+        "item": "Tomato sauce",
+        "measurement": "cups",
+        "quantity": 2
+      },
+      {
+        "item": "Olive oil",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "Cook spaghetti according to package instructions",
+      "In a large pan, heat olive oil over medium heat",
+      "Add chopped onion and minced garlic, cook until softened",
+      "Add ground beef and cook until browned",
+      "Pour in tomato sauce, salt, and pepper. Simmer for 20 minutes",
+      "Serve the meat sauce over cooked spaghetti"
+    ],
+    "vegan": false,
+    "vegetarian": false,
+    "cuisine": "Italian",
+    "creatorAuth0Sub": "abcdef123456"
+  },
+  {
+    "name": "Chicken Stir-Fry",
+    "imageSrc": "chicken-stir-fry.jpg",
+    "recipeAuthor": "Jane Smith",
+    "timeToCook": {
+      "Cook": 15,
+      "Prep": 10
+    },
+    "difficulty": "Easy",
+    "labels": [
+      "Asian",
+      "Stir-Fry"
+    ],
+    "portions": "2",
+    "description": "Quick and delicious chicken stir-fry",
+    "nutrition": {
+      "kcal": 400,
+      "sugars": 5,
+      "salt": 1,
+      "carbs": 35,
+      "protein": 30,
+      "fat": 15,
+      "saturates": 2,
+      "fibre": 6
+    },
+    "ingredients": [
+      {
+        "item": "Chicken breast",
+        "measurement": "grams",
+        "quantity": 300
+      },
+      {
+        "item": "Broccoli",
+        "measurement": "grams",
+        "quantity": 200
+      },
+      {
+        "item": "Carrot",
+        "measurement": "grams",
+        "quantity": 150
+      },
+      {
+        "item": "Bell pepper",
+        "measurement": "grams",
+        "quantity": 150
+      },
+      {
+        "item": "Garlic",
+        "measurement": "cloves",
+        "quantity": 2
+      },
+      {
+        "item": "Ginger",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Soy sauce",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Honey",
+        "measurement": "tablespoons",
+        "quantity": 1
+      },
+      {
+        "item": "Vegetable oil",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "Slice the chicken breast into thin strips",
+      "In a small bowl, whisk together soy sauce, honey, minced garlic, grated ginger, salt, and pepper",
+      "Heat vegetable oil in a large skillet or wok over high heat",
+      "Add chicken strips and stir-fry until cooked through",
+      "Remove chicken from the skillet and set aside",
+      "In the same skillet, stir-fry broccoli, carrots, and bell pepper until crisp-tender",
+      "Return the cooked chicken to the skillet and pour in the sauce",
+      "Stir-fry for 2-3 minutes until everything is coated in the sauce",
+      "Serve the chicken stir-fry hot with steamed rice"
+    ],
+    "vegan": false,
+    "vegetarian": false,
+    "cuisine": "Asian",
+    "creatorAuth0Sub": "123456abcdef"
+  },
+  {
+    "name": "Caprese Salad",
+    "imageSrc": "caprese-salad.jpg",
+    "recipeAuthor": "Sarah Johnson",
+    "timeToCook": {
+      "Cook": 0,
+      "Prep": 10
+    },
+    "difficulty": "Easy",
+    "labels": [
+      "Italian",
+      "Salad"
+    ],
+    "portions": "2",
+    "description": "Simple and refreshing Caprese salad",
+    "nutrition": {
+      "kcal": 200,
+      "sugars": 3,
+      "salt": 1,
+      "carbs": 10,
+      "protein": 8,
+      "fat": 15,
+      "saturates": 5,
+      "fibre": 2
+    },
+    "ingredients": [
+      {
+        "item": "Tomatoes",
+        "measurement": "medium",
+        "quantity": 2
+      },
+      {
+        "item": "Fresh mozzarella",
+        "measurement": "grams",
+        "quantity": 125
+      },
+      {
+        "item": "Fresh basil leaves",
+        "measurement": "leaves",
+        "quantity": 10
+      },
+      {
+        "item": "Extra virgin olive oil",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Balsamic vinegar",
+        "measurement": "tablespoons",
+        "quantity": 1
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "Slice the tomatoes and fresh mozzarella into thick slices",
+      "Arrange the tomato and mozzarella slices on a plate",
+      "Tuck basil leaves between the tomato and mozzarella slices",
+      "Drizzle with extra virgin olive oil and balsamic vinegar",
+      "Sprinkle with salt and pepper",
+      "Let the salad sit for a few minutes to allow the flavors to meld",
+      "Serve the Caprese salad as an appetizer or side dish"
+    ],
+    "vegan": false,
+    "vegetarian": true,
+    "cuisine": "Italian",
+    "creatorAuth0Sub": "abcdef123456"
+  },
+  {
+    "name": "Vegan Lentil Soup",
+    "imageSrc": "lentil-soup.jpg",
+    "recipeAuthor": "Emily Wilson",
+    "timeToCook": {
+      "Cook": 40,
+      "Prep": 15
+    },
+    "difficulty": "Easy",
+    "labels": [
+      "Vegan",
+      "Soup"
+    ],
+    "portions": "6",
+    "description": "Hearty and nutritious vegan lentil soup",
+    "nutrition": {
+      "kcal": 250,
+      "sugars": 4,
+      "salt": 1,
+      "carbs": 40,
+      "protein": 15,
+      "fat": 5,
+      "saturates": 1,
+      "fibre": 8
+    },
+    "ingredients": [
+      {
+        "item": "Green lentils",
+        "measurement": "cups",
+        "quantity": 1.5
+      },
+      {
+        "item": "Carrots",
+        "measurement": "medium",
+        "quantity": 2
+      },
+      {
+        "item": "Celery stalks",
+        "measurement": "stalks",
+        "quantity": 2
+      },
+      {
+        "item": "Onion",
+        "measurement": "small",
+        "quantity": 1
+      },
+      {
+        "item": "Garlic",
+        "measurement": "cloves",
+        "quantity": 3
+      },
+      {
+        "item": "Vegetable broth",
+        "measurement": "cups",
+        "quantity": 6
+      },
+      {
+        "item": "Cumin",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Paprika",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Turmeric",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Fresh parsley",
+        "measurement": "tablespoons",
+        "quantity": 2
+      }
+    ],
+    "steps": [
+      "Rinse the lentils under cold water",
+      "In a large pot, heat olive oil over medium heat",
+      "Add chopped onion, diced carrots, diced celery, and minced garlic. Sauté until softened",
+      "Add lentils, vegetable broth, cumin, paprika, turmeric, salt, and pepper",
+      "Bring to a boil, then reduce heat and simmer for 30 minutes until lentils are tender",
+      "Garnish with fresh parsley before serving",
+      "Serve the vegan lentil soup hot with crusty bread"
+    ],
+    "vegan": true,
+    "vegetarian": true,
+    "cuisine": "International",
+    "creatorAuth0Sub": "123456abcdef"
+  },
+  {
+    "name": "Beef Tacos",
+    "imageSrc": "beef-tacos.jpg",
+    "recipeAuthor": "Michael Thompson",
+    "timeToCook": {
+      "Cook": 20,
+      "Prep": 15
+    },
+    "difficulty": "Medium",
+    "labels": [
+      "Mexican",
+      "Tacos"
+    ],
+    "portions": "4",
+    "description": "Flavorful beef tacos with all the fixings",
+    "nutrition": {
+      "kcal": 450,
+      "sugars": 3,
+      "salt": 1.5,
+      "carbs": 30,
+      "protein": 25,
+      "fat": 25,
+      "saturates": 10,
+      "fibre": 5
+    },
+    "ingredients": [
+      {
+        "item": "Ground beef",
+        "measurement": "grams",
+        "quantity": 500
+      },
+      {
+        "item": "Taco seasoning",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Onion",
+        "measurement": "small",
+        "quantity": 1
+      },
+      {
+        "item": "Garlic",
+        "measurement": "cloves",
+        "quantity": 2
+      },
+      {
+        "item": "Tomatoes",
+        "measurement": "medium",
+        "quantity": 2
+      },
+      {
+        "item": "Lettuce",
+        "measurement": "cups",
+        "quantity": 2
+      },
+      {
+        "item": "Cheddar cheese",
+        "measurement": "cups",
+        "quantity": 1
+      },
+      {
+        "item": "Taco shells",
+        "measurement": "count",
+        "quantity": 8
+      },
+      {
+        "item": "Sour cream",
+        "measurement": "tablespoons",
+        "quantity": 4
+      },
+      {
+        "item": "Salsa",
+        "measurement": "tablespoons",
+        "quantity": 4
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "In a large skillet, brown ground beef over medium heat",
+      "Add chopped onion and minced garlic. Cook until onions are translucent",
+      "Stir in taco seasoning, salt, and pepper",
+      "Add diced tomatoes and simmer for 5 minutes",
+      "Warm taco shells in the oven or on the stovetop",
+      "Fill each taco shell with the beef mixture",
+      "Top with shredded lettuce, grated cheddar cheese, sour cream, and salsa",
+      "Serve the beef tacos hot with your favorite toppings"
+    ],
+    "vegan": false,
+    "vegetarian": false,
+    "cuisine": "Mexican",
+    "creatorAuth0Sub": "abcdef123456"
+  },
+  {
+    "name": "Pesto Pasta",
+    "imageSrc": "pesto-pasta.jpg",
+    "recipeAuthor": "Emma Davis",
+    "timeToCook": {
+      "Cook": 12,
+      "Prep": 10
+    },
+    "difficulty": "Easy",
+    "labels": [
+      "Italian",
+      "Pasta"
+    ],
+    "portions": "2",
+    "description": "Simple and flavorful pesto pasta",
+    "nutrition": {
+      "kcal": 400,
+      "sugars": 2,
+      "salt": 1,
+      "carbs": 50,
+      "protein": 10,
+      "fat": 18,
+      "saturates": 3,
+      "fibre": 4
+    },
+    "ingredients": [
+      {
+        "item": "Pasta (e.g., spaghetti, penne)",
+        "measurement": "grams",
+        "quantity": 200
+      },
+      {
+        "item": "Fresh basil leaves",
+        "measurement": "cups",
+        "quantity": 2
+      },
+      {
+        "item": "Pine nuts",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Garlic",
+        "measurement": "cloves",
+        "quantity": 2
+      },
+      {
+        "item": "Parmesan cheese",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Extra virgin olive oil",
+        "measurement": "tablespoons",
+        "quantity": 4
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "Cook pasta according to package instructions",
+      "In a food processor, combine fresh basil leaves, pine nuts, minced garlic, grated Parmesan cheese, salt, and pepper",
+      "While the food processor is running, gradually add extra virgin olive oil until a smooth pesto sauce forms",
+      "Drain cooked pasta and toss with the pesto sauce",
+      "Serve the pesto pasta hot with a sprinkle of grated Parmesan cheese"
+    ],
+    "vegan": false,
+    "vegetarian": true,
+    "cuisine": "Italian",
+    "creatorAuth0Sub": "123456abcdef"
+  },
+  {
+    "name": "Miso Soup",
+    "imageSrc": "miso-soup.jpg",
+    "recipeAuthor": "Daniel Brown",
+    "timeToCook": {
+      "Cook": 10,
+      "Prep": 5
+    },
+    "difficulty": "Easy",
+    "labels": [
+      "Japanese",
+      "Soup"
+    ],
+    "portions": "2",
+    "description": "Traditional and comforting miso soup",
+    "nutrition": {
+      "kcal": 100,
+      "sugars": 2,
+      "salt": 2,
+      "carbs": 10,
+      "protein": 8,
+      "fat": 5,
+      "saturates": 1,
+      "fibre": 2
+    },
+    "ingredients": [
+      {
+        "item": "Dashi stock",
+        "measurement": "cups",
+        "quantity": 2
+      },
+      {
+        "item": "White miso paste",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Firm tofu",
+        "measurement": "grams",
+        "quantity": 100
+      },
+      {
+        "item": "Green onions",
+        "measurement": "stalks",
+        "quantity": 2
+      },
+      {
+        "item": "Seaweed (e.g., wakame)",
+        "measurement": "tablespoons",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "In a saucepan, heat dashi stock over medium heat",
+      "In a small bowl, dissolve white miso paste in a small amount of dashi stock",
+      "Add the miso mixture to the saucepan and stir well",
+      "Slice tofu into small cubes and add to the soup",
+      "Thinly slice green onions and add to the soup",
+      "Simmer the soup for a few minutes until heated through",
+      "Soak seaweed in water to rehydrate, then add to the soup",
+      "Serve the miso soup hot as an appetizer or side dish"
+    ],
+    "vegan": true,
+    "vegetarian": true,
+    "cuisine": "Japanese",
+    "creatorAuth0Sub": "abcdef123456"
+  },
+  {
+    "name": "Caesar Salad",
+    "imageSrc": "caesar-salad.jpg",
+    "recipeAuthor": "Olivia Thompson",
+    "timeToCook": {
+      "Cook": 0,
+      "Prep": 15
+    },
+    "difficulty": "Easy",
+    "labels": [
+      "Salad"
+    ],
+    "portions": "2",
+    "description": "Classic Caesar salad with homemade dressing",
+    "nutrition": {
+      "kcal": 300,
+      "sugars": 2,
+      "salt": 2,
+      "carbs": 15,
+      "protein": 10,
+      "fat": 25,
+      "saturates": 5,
+      "fibre": 3
+    },
+    "ingredients": [
+      {
+        "item": "Romaine lettuce",
+        "measurement": "cups",
+        "quantity": 4
+      },
+      {
+        "item": "Croutons",
+        "measurement": "cups",
+        "quantity": 1
+      },
+      {
+        "item": "Parmesan cheese",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Anchovy paste",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Garlic",
+        "measurement": "cloves",
+        "quantity": 2
+      },
+      {
+        "item": "Egg yolks",
+        "measurement": "count",
+        "quantity": 2
+      },
+      {
+        "item": "Lemon juice",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Dijon mustard",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Olive oil",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "Wash and dry the romaine lettuce leaves. Tear into bite-sized pieces",
+      "In a large bowl, combine torn lettuce leaves and croutons",
+      "In a separate bowl, whisk together Parmesan cheese, anchovy paste, minced garlic, egg yolks, lemon juice, Dijon mustard, salt, and pepper",
+      "Slowly drizzle in olive oil while continuing to whisk until the dressing emulsifies",
+      "Pour the dressing over the lettuce and croutons. Toss well to coat",
+      "Serve the Caesar salad immediately as a starter or main dish"
+    ],
+    "vegan": false,
+    "vegetarian": true,
+    "cuisine": "International",
+    "creatorAuth0Sub": "123456abcdef"
+  },
+  {
+    "name": "Chicken Parmesan",
+    "imageSrc": "chicken-parmesan.jpg",
+    "recipeAuthor": "Michael Wilson",
+    "timeToCook": {
+      "Cook": 15,
+      "Prep": 20
+    },
+    "difficulty": "Medium",
+    "labels": [
+      "Italian",
+      "Chicken"
+    ],
+    "portions": "2",
+    "description": "Classic chicken Parmesan with marinara sauce and melted cheese",
+    "nutrition": {
+      "kcal": 600,
+      "sugars": 4,
+      "salt": 2.5,
+      "carbs": 40,
+      "protein": 40,
+      "fat": 30,
+      "saturates": 12,
+      "fibre": 4
+    },
+    "ingredients": [
+      {
+        "item": "Chicken breasts",
+        "measurement": "grams",
+        "quantity": 400
+      },
+      {
+        "item": "Bread crumbs",
+        "measurement": "cups",
+        "quantity": 1
+      },
+      {
+        "item": "Grated Parmesan cheese",
+        "measurement": "cups",
+        "quantity": 1
+      },
+      {
+        "item": "Eggs",
+        "measurement": "count",
+        "quantity": 2
+      },
+      {
+        "item": "All-purpose flour",
+        "measurement": "cups",
+        "quantity": 0.5
+      },
+      {
+        "item": "Marinara sauce",
+        "measurement": "cups",
+        "quantity": 2
+      },
+      {
+        "item": "Mozzarella cheese",
+        "measurement": "cups",
+        "quantity": 1
+      },
+      {
+        "item": "Olive oil",
+        "measurement": "tablespoons",
+        "quantity": 4
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "Preheat the oven to 375°F (190°C)",
+      "Pound chicken breasts to an even thickness",
+      "In one bowl, whisk eggs. In another bowl, combine bread crumbs, grated Parmesan cheese, salt, and pepper",
+      "Coat chicken breasts in flour, dip in beaten eggs, then coat with bread crumb mixture",
+      "Heat olive oil in a large skillet over medium-high heat",
+      "Cook chicken breasts until golden brown on both sides",
+      "Place cooked chicken breasts in a baking dish",
+      "Top with marinara sauce and mozzarella cheese",
+      "Bake in the preheated oven for 10-12 minutes until the cheese is melted and bubbly",
+      "Serve the chicken Parmesan hot with spaghetti or a side salad"
+    ],
+    "vegan": false,
+    "vegetarian": false,
+    "cuisine": "Italian",
+    "creatorAuth0Sub": "abcdef123456"
+  },
+  {
+    "name": "Spinach and Feta Stuffed Chicken",
+    "imageSrc": "stuffed-chicken.jpg",
+    "recipeAuthor": "Sarah Johnson",
+    "timeToCook": {
+      "Cook": 30,
+      "Prep": 15
+    },
+    "difficulty": "Medium",
+    "labels": [
+      "Chicken"
+    ],
+    "portions": "2",
+    "description": "Tender chicken breasts stuffed with spinach and feta cheese",
+    "nutrition": {
+      "kcal": 400,
+      "sugars": 2,
+      "salt": 1.5,
+      "carbs": 10,
+      "protein": 35,
+      "fat": 25,
+      "saturates": 8,
+      "fibre": 2
+    },
+    "ingredients": [
+      {
+        "item": "Chicken breasts",
+        "measurement": "grams",
+        "quantity": 400
+      },
+      {
+        "item": "Baby spinach",
+        "measurement": "cups",
+        "quantity": 2
+      },
+      {
+        "item": "Feta cheese",
+        "measurement": "cups",
+        "quantity": 0.5
+      },
+      {
+        "item": "Garlic",
+        "measurement": "cloves",
+        "quantity": 2
+      },
+      {
+        "item": "Olive oil",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "Preheat the oven to 375°F (190°C)",
+      "In a skillet, heat olive oil over medium heat",
+      "Add minced garlic and baby spinach. Sauté until spinach wilts",
+      "Remove from heat and crumble feta cheese into the skillet. Stir well to combine",
+      "Slice a pocket into each chicken breast, being careful not to cut all the way through",
+      "Stuff the spinach and feta mixture into the chicken pockets",
+      "Season chicken breasts with salt and pepper",
+      "Heat olive oil in an oven-safe skillet over medium-high heat",
+      "Sear chicken breasts for 2-3 minutes on each side",
+      "Transfer the skillet to the preheated oven and bake for 20 minutes until chicken is cooked through",
+      "Serve the stuffed chicken hot with a side of roasted vegetables or rice"
+    ],
+    "vegan": false,
+    "vegetarian": false,
+    "cuisine": "International",
+    "creatorAuth0Sub": "123456abcdef"
+  },
+  {
+    "name": "Vegetable Stir-Fry",
+    "imageSrc": "vegetable-stir-fry.jpg",
+    "recipeAuthor": "John Doe",
+    "timeToCook": {
+      "Cook": 10,
+      "Prep": 10
+    },
+    "difficulty": "Easy",
+    "labels": [
+      "Asian",
+      "Stir-Fry"
+    ],
+    "portions": "2",
+    "description": "Quick and healthy vegetable stir-fry",
+    "nutrition": {
+      "kcal": 200,
+      "sugars": 6,
+      "salt": 1.5,
+      "carbs": 30,
+      "protein": 8,
+      "fat": 6,
+      "saturates": 1,
+      "fibre": 10
+    },
+    "ingredients": [
+      {
+        "item": "Broccoli",
+        "measurement": "grams",
+        "quantity": 200
+      },
+      {
+        "item": "Carrots",
+        "measurement": "grams",
+        "quantity": 150
+      },
+      {
+        "item": "Bell pepper",
+        "measurement": "grams",
+        "quantity": 150
+      },
+      {
+        "item": "Snap peas",
+        "measurement": "grams",
+        "quantity": 100
+      },
+      {
+        "item": "Garlic",
+        "measurement": "cloves",
+        "quantity": 2
+      },
+      {
+        "item": "Ginger",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Soy sauce",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Sesame oil",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "Wash and chop vegetables into bite-sized pieces",
+      "In a large skillet or wok, heat sesame oil over high heat",
+      "Add minced garlic and grated ginger. Sauté for 1 minute",
+      "Add chopped vegetables and stir-fry for 5-6 minutes until crisp-tender",
+      "Drizzle soy sauce over the vegetables. Season with salt and pepper",
+      "Continue stir-frying for 1-2 minutes until the sauce is well distributed",
+      "Serve the vegetable stir-fry hot with steamed rice or noodles"
+    ],
+    "vegan": true,
+    "vegetarian": true,
+    "cuisine": "Asian",
+    "creatorAuth0Sub": "abcdef123456"
+  },
+  {
+    "name": "Ratatouille",
+    "imageSrc": "ratatouille.jpg",
+    "recipeAuthor": "Emma Davis",
+    "timeToCook": {
+      "Cook": 40,
+      "Prep": 20
+    },
+    "difficulty": "Medium",
+    "labels": [
+      "French",
+      "Vegetarian"
+    ],
+    "portions": "4",
+    "description": "Classic French ratatouille with fresh vegetables",
+    "nutrition": {
+      "kcal": 150,
+      "sugars": 8,
+      "salt": 1,
+      "carbs": 20,
+      "protein": 5,
+      "fat": 6,
+      "saturates": 1,
+      "fibre": 8
+    },
+    "ingredients": [
+      {
+        "item": "Eggplant",
+        "measurement": "medium",
+        "quantity": 1
+      },
+      {
+        "item": "Zucchini",
+        "measurement": "medium",
+        "quantity": 2
+      },
+      {
+        "item": "Bell pepper",
+        "measurement": "medium",
+        "quantity": 1
+      },
+      {
+        "item": "Onion",
+        "measurement": "medium",
+        "quantity": 1
+      },
+      {
+        "item": "Garlic",
+        "measurement": "cloves",
+        "quantity": 3
+      },
+      {
+        "item": "Tomatoes",
+        "measurement": "cups",
+        "quantity": 2
+      },
+      {
+        "item": "Olive oil",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Fresh thyme",
+        "measurement": "tablespoons",
+        "quantity": 2
+      },
+      {
+        "item": "Salt",
+        "measurement": "teaspoon",
+        "quantity": 1
+      },
+      {
+        "item": "Pepper",
+        "measurement": "teaspoon",
+        "quantity": 1
+      }
+    ],
+    "steps": [
+      "Preheat the oven to 375°F (190°C)",
+      "Slice eggplant, zucchini, bell pepper, and onion into thin rounds",
+      "Mince garlic and chop tomatoes into small pieces",
+      "In a large baking dish, arrange the sliced vegetables in overlapping layers",
+      "Drizzle olive oil over the vegetables. Sprinkle with minced garlic, fresh thyme, salt, and pepper",
+      "Cover the baking dish with foil and bake for 30 minutes",
+      "Remove the foil and bake for an additional 10 minutes until the vegetables are tender and lightly browned",
+      "Serve the ratatouille hot as a side dish or main course"
+    ],
+    "vegan": true,
+    "vegetarian": true,
+    "cuisine": "French",
+    "creatorAuth0Sub": "123456abcdef"
+  }
+]

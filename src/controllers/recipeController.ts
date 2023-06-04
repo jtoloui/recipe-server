@@ -26,9 +26,29 @@ export class RecipeController {
 
   getRecipeById = async (req: Request, res: Response) => {
     try {
-      const recipe = await RecipeModel.findById(req.params.id);
+      const findReturnItems: {
+        [K in keyof Partial<RecipeAttributes>]: number;
+      } = {
+        name: 1,
+        labels: 1,
+        imageSrc: 1,
+        ingredients: 1,
+        timeToCook: 1,
+        steps: 1,
+        vegan: 1,
+        vegetarian: 1,
+        creatorAuth0Sub: 1,
+        recipeAuthor: 1,
+        difficulty: 1,
+        portions: 1,
+        description: 1,
+        nutrition: 1,
+        cuisine: 1,
+      };
+      const recipe = await RecipeModel.findById(req.params.id, findReturnItems);
       if (recipe) {
-        return res.status(200).json(recipe);
+        const isAuthor = recipe.creatorAuth0Sub === req.oidc.user?.sub;
+        return res.status(200).json({ ...recipe.toObject(), isAuthor });
       } else {
         return res.status(404).json({ message: 'Recipe not found' });
       }
@@ -115,13 +135,27 @@ export class RecipeController {
 
       if (label.toLocaleLowerCase() === 'all') {
         const recipes = await RecipeModel.find({}, findReturnItems);
-        return res.status(200).json(recipes);
+        const recipesWithTotalTime = recipes.map((recipe) => {
+          const totalHours = recipe.timeToCook.totalHours;
+          const totalMinutes = recipe.timeToCook.totalMinutes;
+          const totalTime =
+            totalHours >= 1 ? `${totalHours} hrs` : `${totalMinutes} mins`;
+          return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
+        });
+        return res.status(200).json(recipesWithTotalTime);
       }
       const recipes = await RecipeModel.find(
         { labels: label },
         findReturnItems
       );
-      return res.status(200).json(recipes);
+      const recipesWithTotalTime = recipes.map((recipe) => {
+        const totalHours = recipe.timeToCook.totalHours;
+        const totalMinutes = recipe.timeToCook.totalMinutes;
+        const totalTime =
+          totalHours >= 1 ? `${totalHours} hrs` : `${totalMinutes} mins`;
+        return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
+      });
+      return res.status(200).json(recipesWithTotalTime);
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
       return res.status(500).json({ message: 'Error retrieving recipes' });
