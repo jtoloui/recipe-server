@@ -26,9 +26,29 @@ export class RecipeController {
 
   getRecipeById = async (req: Request, res: Response) => {
     try {
-      const recipe = await RecipeModel.findById(req.params.id);
+      const findReturnItems: {
+        [K in keyof Partial<RecipeAttributes>]: number;
+      } = {
+        name: 1,
+        labels: 1,
+        imageSrc: 1,
+        ingredients: 1,
+        timeToCook: 1,
+        steps: 1,
+        vegan: 1,
+        vegetarian: 1,
+        creatorAuth0Sub: 1,
+        recipeAuthor: 1,
+        difficulty: 1,
+        portions: 1,
+        description: 1,
+        nutrition: 1,
+        cuisine: 1,
+      };
+      const recipe = await RecipeModel.findById(req.params.id, findReturnItems);
       if (recipe) {
-        return res.status(200).json(recipe);
+        const isAuthor = recipe.creatorAuth0Sub === req.oidc.user?.sub;
+        return res.status(200).json({ ...recipe.toObject(), isAuthor });
       } else {
         return res.status(404).json({ message: 'Recipe not found' });
       }
