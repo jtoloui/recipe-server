@@ -66,7 +66,6 @@ app.use(
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
-// app.use('/api/profile', profileRoutes);
 
 if (process.env.NODE_ENV !== 'production') {
   const key = fs.readFileSync('./certs/localhost-key.pem');
