@@ -1,4 +1,4 @@
-const reactAppOrigin = 'https://api.jamietoloui.com';
+const reactAppOrigin = 'https://www.jamietoloui.com';
 
 export const corsOptions = {
   origin: reactAppOrigin,
