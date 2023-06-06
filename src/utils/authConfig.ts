@@ -5,7 +5,7 @@ export const config: ConfigParams = {
   authRequired: false,
   auth0Logout: true,
   secret: process.env.AUTH0_SECRET || '',
-  baseURL: 'https://localhost:3001',
+  baseURL: 'https://api.jamietoloui.com',
   clientID: process.env.AUTH0_CLIENT_ID || '',
   clientSecret: process.env.AUTH0_CLIENT_SECRET || '',
   issuerBaseURL: `https://${process.env.AUTH0_DOMAIN}`,

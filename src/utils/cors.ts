@@ -1,4 +1,4 @@
-const reactAppOrigin = 'https://localhost:3000';
+const reactAppOrigin = 'https://api.jamietoloui.com';
 
 export const corsOptions = {
   origin: reactAppOrigin,

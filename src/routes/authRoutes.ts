@@ -69,7 +69,7 @@ router.get('/users', isAdmin, async (req: Request, res: Response) => {
 });
 
 router.get('/login', (req: Request, res: Response) => {
-  res.oidc.login({ returnTo: 'https://localhost:3000' });
+  res.oidc.login({ returnTo: 'https://www.jamietoloui.com' });
 });
 
 router.get('/authenticated', (req: Request, res: Response) => {
