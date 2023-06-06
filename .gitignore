@@ -6,3 +6,6 @@
 .vscode
 
 /certs
+
+dist
+.build

@@ -1,0 +1,19 @@
+service: my-express-app
+provider:
+  name: aws
+  runtime: nodejs14.x
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+custom:
+  serverless-offline:
+      httpPort: 3001
+      noPrependStageInUrl: true
+      httpsProtocol: "./certs"
+functions:
+  app:
+    handler: dist/index.handler
+    timeout: 60
+    events:
+      - http: ANY /
+      - http: 'ANY /{proxy+}'

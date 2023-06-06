@@ -3,10 +3,9 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import fs from 'fs';
-import https from 'https';
 import expressWinston from 'express-winston';
 import { auth } from 'express-openid-connect';
+import serverless from 'serverless-http';
 
 import assignId from './src/middleware/requestId';
 import logger from './src/logger/winston';
@@ -17,7 +16,6 @@ import { config } from './src/utils/authConfig';
 // routes
 import apiRoutes from './src/routes/apiRoutes';
 import authRoutes from './src/routes/authRoutes';
-import profileRoutes from './src/routes/profileRoutes';
 
 dotenv.config();
 
@@ -67,15 +65,17 @@ app.use(
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
 
-if (process.env.NODE_ENV !== 'production') {
-  const key = fs.readFileSync('./certs/localhost-key.pem');
-  const cert = fs.readFileSync('./certs/localhost.pem');
+module.exports.handler = serverless(app);
 
-  https.createServer({ key, cert }, app).listen(port, () => {
-    console.log(`⚡️[server]: Server is running at https://localhost:${port}`);
-  });
-} else {
-  app.listen(port, () => {
-    console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
-  });
-}
+// if (process.env.NODE_ENV !== 'production') {
+//   const key = fs.readFileSync('./certs/localhost-key.pem');
+//   const cert = fs.readFileSync('./certs/localhost.pem');
+
+//   https.createServer({ key, cert }, app).listen(port, () => {
+//     console.log(`⚡️[server]: Server is running at https://localhost:${port}`);
+//   });
+// } else {
+//   app.listen(port, () => {
+//     console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
+//   });
+// }
