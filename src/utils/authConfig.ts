@@ -22,7 +22,6 @@ export const config: ConfigParams = {
     cookie: {
       secure: true,
       httpOnly: true,
-      sameSite: 'none',
       domain: '.jamietoloui.com',
     },
     name: 'session_token',
