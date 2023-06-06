@@ -33,6 +33,6 @@
     "@types/uuid": "^9.0.1",
     "concurrently": "^8.0.1",
     "nodemon": "^2.0.22",
-    "typescript": "^5.0.4"
+    "typescript": "^5.1.3"
   }
 }
