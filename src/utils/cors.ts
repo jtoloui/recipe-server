@@ -1,4 +1,4 @@
-const reactAppOrigin = 'https://www.jamietoloui.com';
+const reactAppOrigin = process.env.WEB_APP_URI || 'http://localhost:3000';
 
 export const corsOptions = {
   origin: reactAppOrigin,
