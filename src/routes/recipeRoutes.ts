@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import { requiresAuth } from 'express-openid-connect';
 
 import { RecipeController } from '../controllers/recipeController';
 import { isAuthenticated } from '../middleware/auth';

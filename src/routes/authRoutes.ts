@@ -10,47 +10,12 @@ import {
 import axios from 'axios';
 import express, { Request, Response } from 'express';
 import { JwtPayload, decode } from 'jsonwebtoken';
-import QueryString from 'qs';
-import querystring from 'querystring';
 
 import { managementClient } from '../auth/auth0Client';
 import { userPool } from '../auth/awsCognito';
 import { isAdmin } from '../middleware/auth';
 
 const router = express.Router();
-
-// router.post('/register', async (req: Request, res: Response) => {
-//   const { email, password } = req.body;
-
-//   try {
-//     const user = await managementClient.createUser({
-//       connection: 'Username-Password-Authentication', // Replace this with the name of your Auth0 connection
-//       email,
-//       password,
-//       user_metadata: {
-//         timezone: 'Europe/London',
-//       },
-//     });
-
-//     const assigned = await managementClient.assignRolestoUser(
-//       {
-//         id: user.user_id || '',
-//       },
-//       {
-//         roles: ['rol_rsNOujhucO6Kb1jX'],
-//       }
-//     );
-
-//     const roles = await managementClient.getUserRoles({
-//       id: user.user_id || '',
-//     });
-
-//     res.status(201).json({ message: 'User created', user });
-//   } catch (error) {
-//     console.error('Error creating user:', error);
-//     res.status(500).json({ message: 'Error creating user', error: error });
-//   }
-// });
 
 router.post('/delete/user', isAdmin, async (req: Request, res: Response) => {
   const { id } = req.body;
@@ -125,6 +90,61 @@ router.post('/login', (req, res) => {
     onFailure: function (err) {
       console.error(err);
       return res.status(400).json({ message: 'User login failed', err });
+    },
+  });
+});
+
+router.post('/forgot-password', (req, res) => {
+  const { username } = req.body;
+
+  const userData = {
+    Username: username,
+    Pool: userPool,
+  };
+
+  const cognitoUser = new CognitoUser(userData);
+
+  cognitoUser.forgotPassword({
+    onSuccess: function (result) {
+      console.log('call result: ' + result);
+      return res.status(200).json({
+        message: 'User password reset',
+        result,
+      });
+    },
+    onFailure: function (err) {
+      console.error(err);
+      return res
+        .status(400)
+        .json({ message: 'User password reset failed', err });
+    },
+  });
+});
+
+router.post('/forgot-password/confirm', (req, res) => {
+  const { username, code, password } = req.body;
+
+  const userData = {
+    Username: username,
+    Pool: userPool,
+  };
+
+  const cognitoUser = new CognitoUser(userData);
+
+  cognitoUser.confirmPassword(code, password, {
+    onSuccess: function (result) {
+      console.log('call result: ' + result);
+      return res.status(200).json({
+        message: 'User password reset confirmed',
+        result,
+      });
+    },
+    onFailure: function (err) {
+      console.error(err);
+      return res.status(400).json({
+        message: 'User password reset confirmation failed',
+        err,
+      });
     },
   });
 });
