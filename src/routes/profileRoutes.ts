@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { ProfileController } from '../controllers/profileController';
-
 import { requiresAuth } from 'express-openid-connect';
+
+import { ProfileController } from '../controllers/profileController';
 
 const router = Router();
 

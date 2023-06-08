@@ -40,3 +40,17 @@ declare module 'express-serve-static-core' {
     };
   }
 }
+
+declare module 'express-session' {
+  interface Session {
+    user?: {
+      username: string;
+      sub: string;
+      tokens: {
+        AccessToken: string;
+        IdToken: string;
+        RefreshToken: string;
+      };
+    };
+  }
+}

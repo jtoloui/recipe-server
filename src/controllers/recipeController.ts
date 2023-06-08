@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 
-import RecipeModel, { RecipeAttributes } from '../models/recipe';
 import logger from '../logger/winston';
+import RecipeModel, { RecipeAttributes } from '../models/recipe';
 
 type getRecipesByLabelParams = {
   label: string;

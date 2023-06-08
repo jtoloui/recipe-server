@@ -1,23 +1,22 @@
-import express, { Express } from 'express';
-import dotenv from 'dotenv';
-import helmet from 'helmet';
-import cors from 'cors';
 import bodyParser from 'body-parser';
-import fs from 'fs';
-import https from 'https';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import express, { Express } from 'express';
+import session from 'express-session';
 import expressWinston from 'express-winston';
-import { auth } from 'express-openid-connect';
+import fs from 'fs';
+import helmet from 'helmet';
+import https from 'https';
 
-import assignId from './src/middleware/requestId';
-import logger from './src/logger/winston';
 import { connectDB } from './src/db';
-import { corsOptions } from './src/utils/cors';
-import { config } from './src/utils/authConfig';
-
+import logger from './src/logger/winston';
+import { isAuthenticated } from './src/middleware/authenticated';
+import assignId from './src/middleware/requestId';
 // routes
 import apiRoutes from './src/routes/apiRoutes';
 import authRoutes from './src/routes/authRoutes';
-import profileRoutes from './src/routes/profileRoutes';
+import { corsOptions } from './src/utils/cors';
 
 dotenv.config();
 
@@ -29,9 +28,6 @@ const port = process.env.PORT;
 const logLevel = process.env.LOG_LEVEL || 'info';
 const winstonLogger = logger(logLevel);
 
-// middleware - auth
-app.use(auth(config));
-
 // middleware - custom
 app.use(assignId);
 
@@ -41,6 +37,15 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
+app.use(
+  session({
+    secret: process.env.AUTH0_SECRET || '', // used to sign the session ID cookie
+    resave: false, // forces the session to be saved back to the session store
+    saveUninitialized: false, // forces a session that is "uninitialized" to be saved to the store
+    cookie: { secure: true }, // true in production to ensure session ID is sent over HTTPS
+  })
+);
 
 // Middleware to log HTTP requests
 app.use(
@@ -57,9 +62,11 @@ app.use(
       return level;
     },
     msg: (req, res) =>
-      `UserId: ${req.oidc.user?.sub || 'N/A'} - Request ID: ${req.id} - HTTP ${
-        req.method
-      } ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
+      `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${
+        req.id
+      } - HTTP ${req.method} ${req.url} - Status: ${res.statusCode} - ${
+        res.statusMessage
+      }`,
   })
 );
 
@@ -67,6 +74,9 @@ app.use(
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
 
+app.get('/test', isAuthenticated, (req, res) => {
+  res.send('Hello World!');
+});
 if (process.env.NODE_ENV !== 'production') {
   const key = fs.readFileSync('./certs/localhost-key.pem');
   const cert = fs.readFileSync('./certs/localhost.pem');

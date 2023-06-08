@@ -1,4 +1,5 @@
 import { ConfigParams } from 'express-openid-connect';
+
 import { authenticationClient } from '../auth/auth0Client';
 
 // strip the protocol from the URI and subdomain

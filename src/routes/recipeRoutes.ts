@@ -1,7 +1,8 @@
 import { Router } from 'express';
+import { requiresAuth } from 'express-openid-connect';
+
 import { RecipeController } from '../controllers/recipeController';
 import { isAuthenticated } from '../middleware/auth';
-import { requiresAuth } from 'express-openid-connect';
 
 const router = Router();
 const recipeController = new RecipeController();
