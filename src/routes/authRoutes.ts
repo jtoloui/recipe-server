@@ -1,4 +1,8 @@
 import {
+  CognitoIdentityProvider as CognitoIdentityServiceProvider,
+  ListUsersRequest,
+} from '@aws-sdk/client-cognito-identity-provider';
+import {
   AuthenticationDetails,
   CognitoAccessToken,
   CognitoIdToken,
@@ -14,6 +18,7 @@ import { JwtPayload, decode } from 'jsonwebtoken';
 import { managementClient } from '../auth/auth0Client';
 import { userPool } from '../auth/awsCognito';
 import { isAdmin } from '../middleware/auth';
+import { isAuthenticated } from '../middleware/authenticated';
 
 const router = express.Router();
 
@@ -37,11 +42,54 @@ router.post('/delete/user', isAdmin, async (req: Request, res: Response) => {
   }
 });
 
-router.get('/users', isAdmin, async (req: Request, res: Response) => {
-  try {
-    const users = await managementClient.getUsers();
+interface UserAttributes {
+  username: string;
+  sub?: string;
+  email?: string;
+  given_name?: string;
+  family_name?: string;
+  full_name: string;
+}
 
-    return res.status(200).json({ message: 'Users fetched', users });
+router.get('/users', isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const client = new CognitoIdentityServiceProvider({
+      region: process.env.AWS_COGNITO_REGION,
+    });
+    const params: ListUsersRequest = {
+      UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+    };
+
+    const usersResp = await client.listUsers(params);
+    if (!usersResp.Users)
+      return res.status(500).json({ message: 'Error fetching users' });
+
+    const users: UserAttributes[] = usersResp.Users.map((user) => {
+      if (!user.Attributes) return null;
+
+      const userAttributes = user.Attributes.reduce<Record<string, string>>(
+        (acc, attribute) => {
+          const attributeName: string = attribute.Name || '';
+          const attributeValue: string = attribute.Value || '';
+          return {
+            ...acc,
+            [attributeName]: attributeValue,
+          };
+        },
+        {}
+      );
+
+      return {
+        username: user.Username,
+        sub: userAttributes.sub,
+        email: userAttributes.email,
+        given_name: userAttributes.given_name,
+        family_name: userAttributes.family_name,
+        full_name: `${userAttributes.given_name} ${userAttributes.family_name}`,
+      } as UserAttributes;
+    }).filter((user): user is UserAttributes => user !== null);
+
+    return res.status(200).json({ users: users || [] });
   } catch (error) {
     console.error('Error fetching users:', error);
     return res.status(500).json({ message: 'Error fetching users', error });
