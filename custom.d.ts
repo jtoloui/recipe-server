@@ -1,5 +1,6 @@
 // import { Request } from 'express';
 import { RequestContext } from 'express-openid-connect';
+
 interface UserRequestContext extends RequestContext {
   user?: {
     sub: string;
@@ -51,6 +52,9 @@ declare module 'express-session' {
         IdToken: string;
         RefreshToken: string;
       };
+      userGroups: string[] | undefined;
     };
+    state: string;
+    nonce: string;
   }
 }

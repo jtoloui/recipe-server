@@ -11,43 +11,42 @@ export const isAuthenticated = async (
   res: Response,
   next: NextFunction
 ) => {
-  const sessionToken = req.session?.user?.tokens?.IdToken;
-  const cookieToken = req.cookies?.app_session;
-  const userName = req.session?.user?.username;
+  try {
+    const sessionToken = req.session?.user?.tokens?.IdToken;
+    const cookieToken = req.cookies?.app_session;
+    const userName = req.session?.user?.username;
 
-  if (!sessionToken || !userName || !cookieToken) {
-    winstonLogger.error(`[isAuthenticated]: Forbidden - No token provided`);
-    return res.status(401).json({ message: 'Forbidden: No token provided' });
-  }
-
-  const client = new CognitoIdentityProvider({
-    region: process.env.AWS_REGION,
-  });
-
-  const params = {
-    UserPoolId: poolData.UserPoolId,
-    Username: req.session?.user?.username,
-  };
-
-  client.adminGetUser(params, (err, data) => {
-    if (err) {
-      winstonLogger.error(
-        `[isAdmin]: Unauthorized - [UserId]: ${req.session.user?.sub} - ${err}`
-      );
-      return res.status(401).json({ message: 'Unauthorized: Invalid token' });
-    } else {
-      if (!data?.Enabled) {
-        winstonLogger.error(
-          `[isAdmin]: Unauthorized - [UserId]: ${req.session.user?.sub} - User is disabled`
-        );
-        return res
-          .status(401)
-          .json({ message: 'Unauthorized: User is disabled' });
-      } else {
-        next();
-      }
+    if (!sessionToken || !userName || !cookieToken) {
+      winstonLogger.error(`[isAuthenticated]: Forbidden - No token provided`);
+      return res.status(401).json({ message: 'Forbidden: No token provided' });
     }
-  });
+
+    const client = new CognitoIdentityProvider({
+      region: process.env.AWS_REGION,
+    });
+
+    const params = {
+      UserPoolId: poolData.UserPoolId,
+      Username: req.session?.user?.username,
+    };
+
+    const user = await client.adminGetUser(params);
+
+    if (!user.Enabled) {
+      winstonLogger.error(
+        `[isAdmin]: Unauthorized - [UserId]: ${req.session.user?.sub} - User is disabled`
+      );
+      return res
+        .status(401)
+        .json({ message: 'Unauthorized: User is disabled' });
+    }
+    next();
+  } catch (error) {
+    winstonLogger.error(
+      `[isAdmin]: Unauthorized - [UserId]: ${req.session.user?.sub} - ${error}`
+    );
+    return res.status(401).json({ message: 'Unauthorized: Invalid token' });
+  }
 };
 
 export const isAdmin = async (

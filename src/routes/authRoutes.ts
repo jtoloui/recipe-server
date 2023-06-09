@@ -1,15 +1,15 @@
 import express from 'express';
 
 import { AuthController } from '../controllers/authController';
-import { isAdmin } from '../middleware/auth';
-import { isAuthenticated } from '../middleware/authenticated';
+import { isAdmin } from '../middleware/authenticated';
 
 const router = express.Router();
 const authController = new AuthController();
 
 router.post('/delete/user', isAdmin, authController.deleteUser);
-router.get('/users', isAuthenticated, authController.getAllUsers);
+router.get('/users', isAdmin, authController.getAllUsers);
 router.post('/login', authController.login);
+router.get('/login-social', authController.loginSocial);
 router.post('/logout', authController.logout);
 router.post('/register', authController.signUp);
 router.post('/verify/email', authController.verifyEmail);

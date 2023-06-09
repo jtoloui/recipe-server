@@ -1,4 +1,5 @@
 import {
+  CognitoIdentityProvider,
   CognitoIdentityProvider as CognitoIdentityServiceProvider,
   ListUsersRequest,
 } from '@aws-sdk/client-cognito-identity-provider';
@@ -12,11 +13,12 @@ import {
   CognitoUserSession,
 } from 'amazon-cognito-identity-js';
 import axios from 'axios';
+import crypto from 'crypto';
 import { Request, Response } from 'express';
 import { JwtPayload, decode } from 'jsonwebtoken';
 
 import { managementClient } from '../auth/auth0Client';
-import { userPool } from '../auth/awsCognito';
+import { poolData, userPool } from '../auth/awsCognito';
 import logger from '../logger/winston';
 
 type deleteUserBody = {
@@ -48,6 +50,7 @@ type forgotPasswordConfirmBody = {
 
 type callBackParams = {
   code: string;
+  state: string;
 };
 
 interface UserAttributes {
@@ -62,6 +65,32 @@ interface UserAttributes {
 type loginBody = {
   username: string;
   password: string;
+};
+
+type loginSocialQuery = {
+  type: 'Google';
+};
+
+const winstonLogger = logger('info', 'Auth Controller');
+
+const addUserToUserGroup = async (username: string) => {
+  const params = {
+    Username: username,
+    UserPoolId: poolData.UserPoolId,
+    GroupName: 'Users',
+  };
+
+  const client = new CognitoIdentityServiceProvider({
+    region: process.env.AWS_COGNITO_REGION,
+  });
+
+  try {
+    await client.adminAddUserToGroup(params);
+    winstonLogger.info(`User ${username} added to group: "User".`);
+  } catch (error) {
+    winstonLogger.error(`Error adding user ${username} to group: "User".`);
+    throw error;
+  }
 };
 
 export class AuthController {
@@ -190,6 +219,36 @@ export class AuthController {
         return res.status(400).json({ message: 'User login failed', err });
       },
     });
+  };
+
+  loginSocial = async (req: Request<loginSocialQuery>, res: Response) => {
+    try {
+      const { type } = req.query;
+
+      if (type !== 'Google') {
+        return res.status(400).json({ message: 'Invalid social login type' });
+      }
+      const clientId = process.env.AWS_COGNITO_CLIENT_ID;
+      const callbackUrl = `${process.env.API_APP_URI}/auth/callback`;
+      const responseType = 'CODE';
+      const identityProvider = type;
+      const AWSDomain = process.env.AWS_COGNITO_DOMAIN || '';
+
+      const state = crypto.randomBytes(16).toString('hex');
+      const nonce = crypto.randomBytes(16).toString('hex');
+
+      req.session.state = state;
+      req.session.nonce = nonce;
+
+      const cognitoAuthUrl = `https://${AWSDomain}/oauth2/authorize?identity_provider=${identityProvider}&redirect_uri=${callbackUrl}&response_type=${responseType}&client_id=${clientId}&state=${state}&scope=email%20openid%20profile&nonce=${nonce}`;
+
+      return res.status(200).json({ redirectUrl: cognitoAuthUrl });
+    } catch (error) {
+      winstonLogger.error('Error logging in with social:', error);
+      return res
+        .status(500)
+        .json({ message: 'Error logging in with social', error });
+    }
   };
 
   logout = async (req: Request, res: Response) => {
@@ -373,7 +432,11 @@ export class AuthController {
   };
 
   callBack = async (req: Request<callBackParams>, res: Response) => {
-    const { code } = req.query;
+    const { code, state } = req.query;
+
+    if (state !== req.session.state) {
+      return res.status(400).json({ error: 'Invalid state parameter' });
+    }
 
     if (!code) {
       // If there's no code, handle the error
@@ -407,6 +470,7 @@ export class AuthController {
       interface ExJwtPayload extends JwtPayload {
         sub: string;
         'cognito:username': string;
+        'cognito:groups'?: string[];
       }
       const decoded = decode(id_token) as ExJwtPayload;
 
@@ -418,10 +482,16 @@ export class AuthController {
           AccessToken: access_token,
           RefreshToken: refresh_token,
         },
+        userGroups: decoded['cognito:groups'] || [],
       };
 
       // At this point, the application should store these tokens securely and use them for subsequent API requests.
-      return res.status(200).json({ id_token, access_token, refresh_token });
+      // return res.status(200).json({ id_token, access_token, refresh_token });
+      res.cookie('app_session', access_token, {
+        httpOnly: true,
+        secure: true,
+      });
+      return res.redirect(process.env.WEB_APP_URI || '');
     } catch (error) {
       console.log(JSON.stringify(error, null, 2));
 
@@ -430,11 +500,29 @@ export class AuthController {
   };
 
   isAuthenticated = async (req: Request, res: Response) => {
-    if (req.session.user?.username) {
-      return res.json({ isAuthenticated: true });
+    const sessionToken = req.session?.user?.tokens?.IdToken;
+    const cookieToken = req.cookies?.app_session;
+    const userName = req.session?.user?.username;
+
+    if (!sessionToken || !userName || !cookieToken) {
+      return res.status(200).json({ isAuthenticated: false });
+    }
+
+    const client = new CognitoIdentityProvider({
+      region: process.env.AWS_REGION,
+    });
+
+    const params = {
+      UserPoolId: poolData.UserPoolId,
+      Username: req.session?.user?.username,
+    };
+
+    const user = await client.adminGetUser(params);
+
+    if (!user.Enabled) {
+      return res.status(200).json({ isAuthenticated: false });
     } else {
-      this.logger.error('User is not authenticated');
-      return res.status(401).json({ isAuthenticated: false });
+      return res.status(200).json({ isAuthenticated: true });
     }
   };
 }

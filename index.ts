@@ -11,7 +11,6 @@ import https from 'https';
 
 import { connectDB } from './src/db';
 import logger from './src/logger/winston';
-import { isAuthenticated } from './src/middleware/authenticated';
 import assignId from './src/middleware/requestId';
 // routes
 import apiRoutes from './src/routes/apiRoutes';
@@ -74,9 +73,6 @@ app.use(
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
 
-app.get('/test', isAuthenticated, (req, res) => {
-  res.send('Hello World!');
-});
 if (process.env.NODE_ENV !== 'production') {
   const key = fs.readFileSync('./certs/localhost-key.pem');
   const cert = fs.readFileSync('./certs/localhost.pem');

@@ -2,7 +2,7 @@ import { Router } from 'express';
 
 import { ProfileController } from '../controllers/profileController';
 import { RecipeController } from '../controllers/recipeController';
-import { isAuthenticated } from '../middleware/auth';
+import { isAuthenticated } from '../middleware/authenticated';
 
 const router = Router();
 
