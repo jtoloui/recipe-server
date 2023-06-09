@@ -10,7 +10,7 @@ router.post('/delete/user', isAdmin, authController.deleteUser);
 router.get('/users', isAdmin, authController.getAllUsers);
 router.post('/login', authController.login);
 router.get('/login-social', authController.loginSocial);
-router.post('/logout', authController.logout);
+router.get('/logout', authController.logout);
 router.post('/register', authController.signUp);
 router.post('/verify/email', authController.verifyEmail);
 router.post('/forgot-password', authController.forgotPassword);

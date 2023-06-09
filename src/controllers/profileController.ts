@@ -10,15 +10,16 @@ export class ProfileController {
     this.logger = logger(logLevel, 'RecipeController');
   }
 
+  // TODO: Implement this
   getProfile = async (req: Request, res: Response) => {
     try {
-      const profile = await req.oidc.user;
+      const profile = req.session?.user;
 
       return res.status(200).json({
-        name: profile?.name,
-        email: profile?.email,
+        name: profile?.username,
+        email: 'profile?.email',
         id: profile?.sub,
-        nickname: profile?.nickname,
+        nickname: profile?.username,
       });
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);

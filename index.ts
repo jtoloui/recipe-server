@@ -37,6 +37,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
+
 app.use(
   session({
     secret: process.env.AUTH0_SECRET || '', // used to sign the session ID cookie
@@ -45,6 +46,13 @@ app.use(
     cookie: { secure: true }, // true in production to ensure session ID is sent over HTTPS
   })
 );
+app.use((req, res, next) => {
+  const sessionCookie = req.session?.user?.tokens.AccessToken;
+  if (sessionCookie && req.cookies.app_session !== sessionCookie) {
+    res.cookie('app_session', sessionCookie, { httpOnly: true, secure: true });
+  }
+  next();
+});
 
 // Middleware to log HTTP requests
 app.use(

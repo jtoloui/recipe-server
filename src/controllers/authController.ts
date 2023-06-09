@@ -1,6 +1,8 @@
 import {
   CognitoIdentityProvider,
+  CognitoIdentityProviderClient,
   CognitoIdentityProvider as CognitoIdentityServiceProvider,
+  GlobalSignOutCommand,
   ListUsersRequest,
 } from '@aws-sdk/client-cognito-identity-provider';
 import {
@@ -251,6 +253,7 @@ export class AuthController {
     }
   };
 
+  // TODO: Fix this as logout isn't working
   logout = async (req: Request, res: Response) => {
     const { user } = req.session;
 
@@ -262,40 +265,32 @@ export class AuthController {
       username,
       tokens: { IdToken, AccessToken, RefreshToken },
     } = user;
+    const client = new CognitoIdentityProviderClient({
+      region: process.env.AWS_COGNITO_REGION,
+    });
+    client.send;
+    const signOutPromises = [];
 
-    if (!IdToken) {
-      return res.status(401).json({ message: 'Invalid session' });
+    if (AccessToken) {
+      signOutPromises.push(
+        client.send(new GlobalSignOutCommand({ AccessToken: AccessToken }))
+      );
     }
 
-    const cognitoUser = new CognitoUser({
-      Username: username,
-      Pool: userPool,
-    });
+    if (IdToken) {
+      signOutPromises.push(
+        client.send(new GlobalSignOutCommand({ AccessToken: IdToken }))
+      );
+    }
+    console.log(signOutPromises);
 
-    cognitoUser.setSignInUserSession(
-      new CognitoUserSession({
-        IdToken: new CognitoIdToken({ IdToken }),
-        AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
-        RefreshToken: new CognitoRefreshToken({ RefreshToken }),
-      })
-    );
-
-    cognitoUser.globalSignOut({
-      onSuccess: (mes) => {
-        req.session.destroy((err) => {
-          if (err) {
-            console.error(err);
-            return res.status(500).send('Failed to log out');
-          }
-        });
-        res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
-        return res.status(200).send('Logged out successfully');
-      },
-      onFailure: (err) => {
-        console.error(err);
-        return res.status(500).send('Failed to sign out');
-      },
-    });
+    try {
+      await Promise.all(signOutPromises);
+      res.sendStatus(200);
+    } catch (error) {
+      console.error(error);
+      res.sendStatus(500);
+    }
   };
 
   signUp = async (

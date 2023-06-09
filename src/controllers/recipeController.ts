@@ -47,7 +47,7 @@ export class RecipeController {
       };
       const recipe = await RecipeModel.findById(req.params.id, findReturnItems);
       if (recipe) {
-        const isAuthor = recipe.creatorAuth0Sub === req.oidc.user?.sub;
+        const isAuthor = recipe.creatorAuth0Sub === req.session?.user?.sub;
         return res.status(200).json({ ...recipe.toObject(), isAuthor });
       } else {
         return res.status(404).json({ message: 'Recipe not found' });
