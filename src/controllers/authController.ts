@@ -159,6 +159,10 @@ export class AuthController {
     cognitoUser.authenticateUser(authenticationDetails, {
       onSuccess: function (result) {
         const accessToken = result.getAccessToken().getJwtToken();
+        const userGroups: string[] | undefined = result
+          .getIdToken()
+          .decodePayload()['cognito:groups'];
+
         req.session.user = {
           username,
           sub: result.getIdToken().payload.sub,
@@ -167,6 +171,7 @@ export class AuthController {
             AccessToken: result.getAccessToken().getJwtToken(),
             RefreshToken: result.getRefreshToken().getToken(),
           },
+          userGroups,
         };
 
         // Set the name of the cookie to 'myAppName_AccessToken'
