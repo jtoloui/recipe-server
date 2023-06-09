@@ -372,6 +372,7 @@ export class AuthController {
 
     if (!code) {
       // If there's no code, handle the error
+      this.logger.error('Authentication failed');
       res.status(400).send('Authentication failed');
       return;
     }
