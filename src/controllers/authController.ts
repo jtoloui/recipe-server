@@ -1,8 +1,6 @@
 import {
   CognitoIdentityProvider,
-  CognitoIdentityProviderClient,
   CognitoIdentityProvider as CognitoIdentityServiceProvider,
-  GlobalSignOutCommand,
   ListUsersRequest,
 } from '@aws-sdk/client-cognito-identity-provider';
 import {
@@ -196,6 +194,10 @@ export class AuthController {
 
         req.session.user = {
           username,
+          name: result.getIdToken().payload.name,
+          givenName: result.getIdToken().payload.given_name,
+          familyName: result.getIdToken().payload.family_name,
+          email: result.getIdToken().payload.email,
           sub: result.getIdToken().payload.sub,
           tokens: {
             IdToken: result.getIdToken().getJwtToken(),
@@ -254,43 +256,158 @@ export class AuthController {
   };
 
   // TODO: Fix this as logout isn't working
+  // logout = async (req: Request, res: Response) => {
+  //   const { user } = req.session;
+
+  //   if (!user) {
+  //     return res.status(401).json({ message: 'Not logged in' });
+  //   }
+
+  //   const {
+  //     username,
+  //     tokens: { IdToken, AccessToken, RefreshToken },
+  //   } = user;
+
+  //   const client = new CognitoIdentityServiceProvider({
+  //     region: process.env.AWS_COGNITO_REGION,
+  //   });
+  //   client.adminUserGlobalSignOut(
+  //     {
+  //       UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+  //       Username: username,
+  //     },
+  //     (err, data) => {
+  //       if (err) {
+  //         console.error(err);
+  //         return res.status(500).json({ message: 'Error logging out', err });
+  //       }
+  //       client.adminGetUser(
+  //         {
+  //           UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+  //           Username: username,
+  //         },
+  //         (err, data) => {
+  //           if (err) {
+  //             console.error(err);
+  //             return res
+  //               .status(500)
+  //               .json({ message: 'Error logging out', err });
+  //           }
+  //           console.log('user info', data);
+  //           return res.status(200).json({ message: 'User logged out' });
+  //         }
+  //       );
+  //       req.session.destroy((err) => {
+  //         if (err) {
+  //           console.error(err);
+  //           return res.status(500).json({ message: 'Error logging out', err });
+  //         }
+  //       });
+  //       res.clearCookie('app_session');
+  //       console.log(data);
+  //       return res.status(200).json({ message: 'User logged out' });
+  //     }
+  //   );
+
+  //   client.adminGetUser(
+  //     {
+  //       UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+  //       Username: username,
+  //     },
+  //     (err, data) => {
+  //       if (err) {
+  //         console.error(err);
+  //         return res.status(500).json({ message: 'Error logging out', err });
+  //       }
+  //       console.log(data);
+  //       return res.status(200).json({ message: 'User logged out' });
+  //     }
+  //   );
+
+  //   const cognitoUser = new CognitoUser({
+  //     Username: username,
+  //     Pool: userPool,
+  //   });
+
+  //   cognitoUser.setSignInUserSession(
+  //     new CognitoUserSession({
+  //       IdToken: new CognitoIdToken({ IdToken }),
+  //       AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
+  //       RefreshToken: new CognitoRefreshToken({ RefreshToken }),
+  //     })
+  //   );
+
+  //   // console.log(cognitoUser);
+
+  //   cognitoUser.globalSignOut({
+  //     onSuccess: function (msg) {
+  //       console.log(msg);
+
+  //       console.log('User logged out successfully');
+  //     },
+  //     onFailure: function (err) {
+  //       console.error('Error while logging out:', err);
+  //     },
+  //   });
+  //   res.status(200).json({ message: 'User logged out' });
+  // };
+
   logout = async (req: Request, res: Response) => {
     const { user } = req.session;
-
     if (!user) {
+      winstonLogger.error('Not logged in');
       return res.status(401).json({ message: 'Not logged in' });
     }
 
     const {
       username,
       tokens: { IdToken, AccessToken, RefreshToken },
+      authType,
     } = user;
-    const client = new CognitoIdentityProviderClient({
-      region: process.env.AWS_COGNITO_REGION,
+    if (!IdToken) {
+      winstonLogger.error('Invalid session');
+      return res.status(401).json({ message: 'Invalid session' });
+    }
+
+    if (authType === 'social') {
+      req.session.destroy((err) => {
+        if (err) {
+          winstonLogger.error('(Social) Error logging out:', err);
+          return res.status(500).json({ message: 'Error logging out', err });
+        }
+      });
+      res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
+      return res.status(200).json({ message: 'User logged out' });
+    }
+    const cognitoUser = new CognitoUser({
+      Username: username,
+      Pool: userPool,
     });
-    client.send;
-    const signOutPromises = [];
 
-    if (AccessToken) {
-      signOutPromises.push(
-        client.send(new GlobalSignOutCommand({ AccessToken: AccessToken }))
-      );
-    }
+    cognitoUser.setSignInUserSession(
+      new CognitoUserSession({
+        IdToken: new CognitoIdToken({ IdToken }),
+        AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
+        RefreshToken: new CognitoRefreshToken({ RefreshToken }),
+      })
+    );
 
-    if (IdToken) {
-      signOutPromises.push(
-        client.send(new GlobalSignOutCommand({ AccessToken: IdToken }))
-      );
-    }
-    console.log(signOutPromises);
-
-    try {
-      await Promise.all(signOutPromises);
-      res.sendStatus(200);
-    } catch (error) {
-      console.error(error);
-      res.sendStatus(500);
-    }
+    cognitoUser.globalSignOut({
+      onSuccess: (mes) => {
+        req.session.destroy((err) => {
+          if (err) {
+            winstonLogger.error('(Cognito) Error logging out:', err);
+            return res.status(500).send('Failed to log out');
+          }
+        });
+        res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
+        return res.status(200).send('Logged out successfully');
+      },
+      onFailure: (err) => {
+        winstonLogger.error('(Cognito) Error logging out:', err);
+        return res.status(500).send('Failed to sign out');
+      },
+    });
   };
 
   signUp = async (
@@ -466,11 +583,19 @@ export class AuthController {
         sub: string;
         'cognito:username': string;
         'cognito:groups'?: string[];
+        provider?: {
+          providerType: string;
+          userId: string;
+        };
       }
       const decoded = decode(id_token) as ExJwtPayload;
 
       req.session.user = {
         username: decoded['cognito:username'],
+        name: decoded.name,
+        email: decoded.email,
+        givenName: decoded.given_name,
+        familyName: decoded.family_name,
         sub: decoded.sub,
         tokens: {
           IdToken: id_token,
@@ -478,6 +603,11 @@ export class AuthController {
           RefreshToken: refresh_token,
         },
         userGroups: decoded['cognito:groups'] || [],
+        authType: 'social',
+        provider: {
+          providerType: decoded.provider?.providerType || '',
+          userId: decoded.provider?.userId || '',
+        },
       };
 
       // At this point, the application should store these tokens securely and use them for subsequent API requests.

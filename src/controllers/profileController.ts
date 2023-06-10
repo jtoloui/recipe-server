@@ -14,12 +14,18 @@ export class ProfileController {
   getProfile = async (req: Request, res: Response) => {
     try {
       const profile = req.session?.user;
+      if (!profile) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
 
       return res.status(200).json({
-        name: profile?.username,
-        email: 'profile?.email',
+        name: profile?.name,
+        email: profile.email,
         id: profile?.sub,
-        nickname: profile?.username,
+        nickname: profile?.name,
+        givenName: profile?.givenName,
+        familyName: profile?.familyName,
+        userName: profile?.username,
       });
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
