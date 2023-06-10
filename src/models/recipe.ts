@@ -42,7 +42,7 @@ export interface RecipeAttributes {
   vegan: boolean;
   vegetarian: boolean;
   cuisine: string;
-  creatorAuth0Sub: string;
+  creatorId: string;
 }
 
 const timeToCookSchema = new Schema<TimeToCook>(
@@ -105,7 +105,7 @@ const recipeSchema = new Schema<Recipe>({
   ingredients: { type: [ingredientSchema], required: true },
   steps: { type: [String], required: true },
   cuisine: { type: String, required: true },
-  creatorAuth0Sub: { type: String, required: true },
+  creatorId: { type: String, required: true },
 });
 
 // Custom build function

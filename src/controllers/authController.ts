@@ -1,5 +1,7 @@
 import {
+  AdminConfirmSignUpCommand,
   CognitoIdentityProvider,
+  CognitoIdentityProviderClient,
   CognitoIdentityProvider as CognitoIdentityServiceProvider,
   ListUsersRequest,
 } from '@aws-sdk/client-cognito-identity-provider';
@@ -451,10 +453,23 @@ export class AuthController {
       if (err) {
         console.error(err);
         return res.status(400).send(err.message);
-      } else {
-        return res.status(200).send('User registration successful');
       }
     });
+    const client = new CognitoIdentityProvider({
+      region: process.env.AWS_REGION,
+    });
+
+    try {
+      await client.adminConfirmSignUp({
+        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+        Username: username,
+      });
+
+      res.status(200).json({ message: 'User created successfully' });
+    } catch (error) {
+      winstonLogger.error('Error confirming user:', error);
+      res.status(500).json({ message: 'Error confirming user', error });
+    }
   };
 
   verifyEmail = async (
