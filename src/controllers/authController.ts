@@ -1,7 +1,5 @@
 import {
-  AdminConfirmSignUpCommand,
   CognitoIdentityProvider,
-  CognitoIdentityProviderClient,
   CognitoIdentityProvider as CognitoIdentityServiceProvider,
   ListUsersRequest,
 } from '@aws-sdk/client-cognito-identity-provider';
