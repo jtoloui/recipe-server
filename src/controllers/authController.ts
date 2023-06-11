@@ -635,29 +635,34 @@ export class AuthController {
   };
 
   isAuthenticated = async (req: Request, res: Response) => {
-    const sessionToken = req.session?.user?.tokens?.IdToken;
-    const cookieToken = req.cookies?.app_session;
-    const userName = req.session?.user?.username;
+    try {
+      const sessionToken = req.session?.user?.tokens?.IdToken;
+      const cookieToken = req.cookies?.app_session;
+      const userName = req.session?.user?.username;
 
-    if (!sessionToken || !userName || !cookieToken) {
-      return res.status(200).json({ isAuthenticated: false });
-    }
+      if (!sessionToken || !userName || !cookieToken) {
+        return res.status(200).json({ isAuthenticated: false });
+      }
 
-    const client = new CognitoIdentityProvider({
-      region: process.env.AWS_REGION,
-    });
+      const client = new CognitoIdentityProvider({
+        region: process.env.AWS_REGION,
+      });
 
-    const params = {
-      UserPoolId: poolData.UserPoolId,
-      Username: req.session?.user?.username,
-    };
+      const params = {
+        UserPoolId: poolData.UserPoolId,
+        Username: req.session?.user?.username,
+      };
 
-    const user = await client.adminGetUser(params);
+      const user = await client.adminGetUser(params);
 
-    if (!user.Enabled) {
-      return res.status(200).json({ isAuthenticated: false });
-    } else {
-      return res.status(200).json({ isAuthenticated: true });
+      if (!user.Enabled) {
+        return res.status(200).json({ isAuthenticated: false });
+      } else {
+        return res.status(200).json({ isAuthenticated: true });
+      }
+    } catch (error) {
+      winstonLogger.error('Error getting tokens:', error);
+      return res.status(500).json({ isAuthenticated: false });
     }
   };
 }
