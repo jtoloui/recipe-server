@@ -59,6 +59,7 @@ app.use(
       secure: true,
       httpOnly: true,
       domain: `.${process.env.COOKIE_DOMAIN}`,
+      sameSite: 'lax',
     },
     store: store,
     resave: true,
