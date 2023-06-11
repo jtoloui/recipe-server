@@ -265,6 +265,12 @@ export class AuthController {
 
       console.log('req.session.state', req.session.state);
 
+      res.cookie('state', state, {
+        httpOnly: true,
+        secure: true, // Uncomment this line if you are using HTTPS
+        domain: cookieDomainRootWithDot,
+      });
+
       const cognitoAuthUrl = `https://${AWSDomain}/oauth2/authorize?identity_provider=${identityProvider}&redirect_uri=${callbackUrl}&response_type=${responseType}&client_id=${clientId}&state=${state}&scope=email%20openid%20profile%20aws.cognito.signin.user.admin&nonce=${nonce}&prompt=login`;
 
       return res.status(200).json({ redirectUrl: cognitoAuthUrl });
@@ -582,10 +588,11 @@ export class AuthController {
 
   callBack = async (req: Request<callBackParams>, res: Response) => {
     const { code, state } = req.query;
+    const cookieState = req.cookies['state'];
 
     console.log('callBack state: ', state);
 
-    if (state !== req.session.state) {
+    if (state !== cookieState) {
       return res.status(400).json({ error: 'Invalid state parameter' });
     }
 
