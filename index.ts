@@ -16,7 +16,7 @@ import assignId from './src/middleware/requestId';
 // routes
 import apiRoutes from './src/routes/apiRoutes';
 import authRoutes from './src/routes/authRoutes';
-import { corsOptions } from './src/utils/cors';
+import { cookieDomainRootWithDot, corsOptions } from './src/utils/cors';
 
 dotenv.config();
 
@@ -53,11 +53,12 @@ app.use(cookieParser());
 app.use(
   session({
     secret: process.env.AUTH0_SECRET || '',
+    name: 'recipe-session',
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       secure: true,
       httpOnly: true,
-      domain: '.jamietoloui.com',
+      // domain: cookieDomainRootWithDot,
     },
     store: store,
     resave: true,
@@ -66,12 +67,14 @@ app.use(
 );
 
 app.use((req, res, next) => {
+  console.log(req.session);
+
   const sessionCookie = req.session?.user?.tokens.AccessToken;
   if (sessionCookie && req.cookies.app_session !== sessionCookie) {
     res.cookie('app_session', sessionCookie, {
       httpOnly: true,
       secure: true,
-      domain: '.jamietoloui.com',
+      // domain: cookieDomainRootWithDot,
     });
   }
   next();

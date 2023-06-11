@@ -20,6 +20,7 @@ import { JwtPayload, decode } from 'jsonwebtoken';
 import { managementClient } from '../auth/auth0Client';
 import { poolData, userPool } from '../auth/awsCognito';
 import logger from '../logger/winston';
+import { cookieDomainRootWithDot } from '../utils/cors';
 
 type deleteUserBody = {
   id: string;
@@ -211,7 +212,7 @@ export class AuthController {
         res.cookie('app_session', accessToken, {
           httpOnly: true,
           secure: true, // Uncomment this line if you are using HTTPS
-          domain: '.jamietoloui.com',
+          domain: cookieDomainRootWithDot,
         });
 
         return res.status(200).json({
@@ -244,6 +245,8 @@ export class AuthController {
 
       req.session.state = state;
       req.session.nonce = nonce;
+
+      console.log('req.session.state', req.session.state);
 
       const cognitoAuthUrl = `https://${AWSDomain}/oauth2/authorize?identity_provider=${identityProvider}&redirect_uri=${callbackUrl}&response_type=${responseType}&client_id=${clientId}&state=${state}&scope=email%20openid%20profile%20aws.cognito.signin.user.admin&nonce=${nonce}&prompt=login`;
 
@@ -563,6 +566,8 @@ export class AuthController {
   callBack = async (req: Request<callBackParams>, res: Response) => {
     const { code, state } = req.query;
 
+    console.log('callBack state: ', state);
+
     if (state !== req.session.state) {
       return res.status(400).json({ error: 'Invalid state parameter' });
     }
@@ -634,7 +639,7 @@ export class AuthController {
       res.cookie('app_session', access_token, {
         httpOnly: true,
         secure: true,
-        domain: '.jamietoloui.com',
+        domain: cookieDomainRootWithDot,
       });
       return res.redirect(process.env.WEB_APP_URI || '');
     } catch (error) {
