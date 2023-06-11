@@ -15,7 +15,7 @@ import {
 import axios from 'axios';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
-import { JwtPayload, decode, decode } from 'jsonwebtoken';
+import { JwtPayload, decode } from 'jsonwebtoken';
 
 import { managementClient } from '../auth/auth0Client';
 import { poolData, userPool } from '../auth/awsCognito';
@@ -690,7 +690,6 @@ export class AuthController {
       region: process.env.AWS_REGION,
     });
     console.log(decoded);
-    
 
     const params = {
       UserPoolId: poolData.UserPoolId,

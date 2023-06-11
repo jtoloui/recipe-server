@@ -43,7 +43,7 @@ const winstonLogger = logger(logLevel);
 app.use(assignId);
 
 // middleware - third party
-app.use(helmet());
+// app.use(helmet());
 // app.use(cors(corsOptions));
 app.use(
   cors({
