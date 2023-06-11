@@ -41,9 +41,9 @@ app.use(cookieParser());
 app.use(
   session({
     secret: process.env.AUTH0_SECRET || '', // used to sign the session ID cookie
-    resave: false, // forces the session to be saved back to the session store
-    saveUninitialized: false, // forces a session that is "uninitialized" to be saved to the store
-    cookie: { secure: true }, // true in production to ensure session ID is sent over HTTPS
+    resave: true, // forces the session to be saved back to the session store
+    saveUninitialized: true, // forces a session that is "uninitialized" to be saved to the store
+    cookie: { secure: true, domain: '.jamietoloui.com' }, // true in production to ensure session ID is sent over HTTPS
   })
 );
 app.use((req, res, next) => {
