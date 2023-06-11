@@ -68,7 +68,7 @@ app.use(
 
 app.use((req, res, next) => {
   console.log(req.session);
-  req.session.hello = 'hello';
+
   const sessionCookie = req.session?.user?.tokens.AccessToken;
   if (sessionCookie && req.cookies.app_session !== sessionCookie) {
     res.cookie('app_session', sessionCookie, {
