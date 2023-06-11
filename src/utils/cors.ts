@@ -12,4 +12,4 @@ export const corsOptions: CorsOptions = {
 const domain = process.env.API_APP_URI || '';
 const domainParts = domain.split('.');
 const domainRoot = domainParts.slice(1).join('.');
-export const cookieDomainRootWithDot = `.${domainRoot}`;
+export const cookieDomainRootWithDot = `.${process.env.COOKIE_DOMAIN}`;
