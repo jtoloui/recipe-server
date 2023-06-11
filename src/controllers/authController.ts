@@ -658,6 +658,8 @@ export class AuthController {
         },
       };
 
+      console.log('callback', req.sessionID);
+
       req.session.save((err) => {
         if (err) {
           console.error(err);

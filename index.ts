@@ -85,6 +85,7 @@ app.use(
 
 app.use((req, res, next) => {
   console.log(req.session);
+  console.log('middlware', req.sessionID);
 
   const sessionCookie = req.session?.user?.tokens.AccessToken;
   if (sessionCookie && req.cookies.app_session !== sessionCookie) {
