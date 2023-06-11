@@ -1,4 +1,5 @@
 import bodyParser from 'body-parser';
+import MongoDBStore from 'connect-mongodb-session';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -18,10 +19,23 @@ import authRoutes from './src/routes/authRoutes';
 import { corsOptions } from './src/utils/cors';
 
 dotenv.config();
+const MongoDBStores = MongoDBStore(session);
 
 connectDB();
 const app: Express = express();
 const port = process.env.PORT;
+
+// allow proxy from cloudfare
+app.set('trust proxy', 1);
+// Setup MongoDB session store
+const mongoUri = process.env.MONGODB_URI || '';
+
+const store = new MongoDBStores({
+  uri: mongoUri,
+  databaseName: 'recipe-session',
+  collection: 'sessions',
+  expires: 1000 * 60 * 60 * 24 * 7, // 1 week
+});
 
 const domain = process.env.API_APP_URI || '';
 const domainParts = domain.split('.');
@@ -44,16 +58,28 @@ app.use(cookieParser());
 
 app.use(
   session({
-    secret: process.env.AUTH0_SECRET || '', // used to sign the session ID cookie
-    resave: false, // forces the session to be saved back to the session store
-    saveUninitialized: false, // forces a session that is "uninitialized" to be saved to the store
-    cookie: { secure: true, domain: domainRootWithDot }, // true in production to ensure session ID is sent over HTTPS
+    secret: process.env.AUTH0_SECRET || '',
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      secure: true,
+      httpOnly: true,
+      domain: `.${process.env.COOKIE_DOMAIN}`,
+      sameSite: 'lax',
+    },
+    store: store,
+    resave: false,
+    saveUninitialized: false,
   })
 );
+
 app.use((req, res, next) => {
   const sessionCookie = req.session?.user?.tokens.AccessToken;
   if (sessionCookie && req.cookies.app_session !== sessionCookie) {
-    res.cookie('app_session', sessionCookie, { httpOnly: true, secure: true });
+    res.cookie('app_session', sessionCookie, {
+      httpOnly: true,
+      secure: true,
+      domain: domainRootWithDot,
+    });
   }
   next();
 });
