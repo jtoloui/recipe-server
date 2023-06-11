@@ -23,6 +23,10 @@ connectDB();
 const app: Express = express();
 const port = process.env.PORT;
 
+const domain = process.env.API_APP_URI || '';
+const domainParts = domain.split('.');
+const domainRoot = domainParts.slice(1).join('.');
+const domainRootWithDot = `.${domainRoot}`;
 // winston logger
 const logLevel = process.env.LOG_LEVEL || 'info';
 const winstonLogger = logger(logLevel);
@@ -43,7 +47,7 @@ app.use(
     secret: process.env.AUTH0_SECRET || '', // used to sign the session ID cookie
     resave: false, // forces the session to be saved back to the session store
     saveUninitialized: false, // forces a session that is "uninitialized" to be saved to the store
-    cookie: { secure: true }, // true in production to ensure session ID is sent over HTTPS
+    cookie: { secure: true, domain: domainRootWithDot }, // true in production to ensure session ID is sent over HTTPS
   })
 );
 app.use((req, res, next) => {
