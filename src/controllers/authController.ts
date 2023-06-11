@@ -658,6 +658,14 @@ export class AuthController {
         },
       };
 
+      req.session.save((err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).send(err.message);
+        }
+        console.log('session saved', req.session);
+      });
+
       // At this point, the application should store these tokens securely and use them for subsequent API requests.
       // return res.status(200).json({ id_token, access_token, refresh_token });
       res.cookie('app_session', access_token, {
@@ -674,36 +682,21 @@ export class AuthController {
   };
 
   isAuthenticated = async (req: Request, res: Response) => {
-    // const sessionToken = req.session?.user?.tokens?.IdToken;
+    const sessionToken = req.session?.user?.tokens?.IdToken;
     const cookieToken = req.cookies?.app_session;
-    // const userName = req.session?.user?.username;
+    const userName = req.session?.user?.username;
 
-    // if (!sessionToken || !userName || !cookieToken) {
-    //   return res.status(200).json({ isAuthenticated: false });
-    // }
-    if (!cookieToken) {
+    if (!sessionToken || !userName || !cookieToken) {
       return res.status(200).json({ isAuthenticated: false });
     }
-    interface ExJwtPayload extends JwtPayload {
-      sub: string;
-      'cognito:username': string;
-      'cognito:groups'?: string[];
-      provider?: {
-        providerType: string;
-        userId: string;
-      };
-      username: string;
-    }
 
-    const decoded = decode(cookieToken) as ExJwtPayload;
     const client = new CognitoIdentityProvider({
       region: process.env.AWS_REGION,
     });
-    console.log(decoded);
 
     const params = {
       UserPoolId: poolData.UserPoolId,
-      Username: decoded?.username,
+      Username: req.session?.user?.username,
     };
 
     const user = await client.adminGetUser(params);
