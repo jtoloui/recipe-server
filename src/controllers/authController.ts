@@ -684,8 +684,18 @@ export class AuthController {
     if (!cookieToken) {
       return res.status(200).json({ isAuthenticated: false });
     }
+    interface ExJwtPayload extends JwtPayload {
+      sub: string;
+      'cognito:username': string;
+      'cognito:groups'?: string[];
+      provider?: {
+        providerType: string;
+        userId: string;
+      };
+      username: string;
+    }
 
-    const decoded = decode(cookieToken);
+    const decoded = decode(cookieToken) as ExJwtPayload;
     const client = new CognitoIdentityProvider({
       region: process.env.AWS_REGION,
     });
@@ -693,7 +703,7 @@ export class AuthController {
 
     const params = {
       UserPoolId: poolData.UserPoolId,
-      Username: req.session?.user?.username,
+      Username: decoded?.username,
     };
 
     const user = await client.adminGetUser(params);
