@@ -8,6 +8,13 @@ import { poolData } from '../auth/awsCognito';
 import logger from '../logger/winston';
 
 const winstonLogger = logger('info', 'Authentication Middleware');
+const client = new CognitoIdentityProvider({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
+});
 
 interface MyJWK extends RSA {
   kid: string;
@@ -26,10 +33,6 @@ export const isAuthenticated = async (
       winstonLogger.error(`[isAuthenticated]: Forbidden - No token provided`);
       return res.status(401).json({ message: 'Forbidden: No token provided' });
     }
-
-    const client = new CognitoIdentityProvider({
-      region: process.env.AWS_REGION,
-    });
 
     const params = {
       UserPoolId: poolData.UserPoolId,
@@ -136,9 +139,6 @@ export const isAdmin = async (
         Username: req.session?.user?.username,
       };
 
-      const client = new CognitoIdentityProvider({
-        region: process.env.AWS_REGION,
-      });
       const groups = await client.adminListGroupsForUser(params);
 
       const userGroups = groups.Groups?.map((group) => group.GroupName || '');

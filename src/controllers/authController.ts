@@ -1,5 +1,4 @@
 import {
-  CognitoIdentityProvider,
   CognitoIdentityProvider as CognitoIdentityServiceProvider,
   ListUsersRequest,
 } from '@aws-sdk/client-cognito-identity-provider';
@@ -72,16 +71,20 @@ type loginSocialQuery = {
 
 const winstonLogger = logger('info', 'Auth Controller');
 
+const client = new CognitoIdentityServiceProvider({
+  region: process.env.AWS_COGNITO_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
+});
+
 const addUserToUserGroup = async (username: string) => {
   const params = {
     Username: username,
     UserPoolId: poolData.UserPoolId,
     GroupName: 'Users',
   };
-
-  const client = new CognitoIdentityServiceProvider({
-    region: process.env.AWS_COGNITO_REGION,
-  });
 
   try {
     await client.adminAddUserToGroup(params);
@@ -122,9 +125,6 @@ export class AuthController {
 
   getAllUsers = async (req: Request, res: Response) => {
     try {
-      const client = new CognitoIdentityServiceProvider({
-        region: process.env.AWS_COGNITO_REGION,
-      });
       const params: ListUsersRequest = {
         UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
       };
@@ -453,9 +453,6 @@ export class AuthController {
         return res.status(400).send(err.message);
       }
     });
-    const client = new CognitoIdentityProvider({
-      region: process.env.AWS_REGION,
-    });
 
     try {
       await client.adminConfirmSignUp({
@@ -643,10 +640,6 @@ export class AuthController {
       if (!sessionToken || !userName || !cookieToken) {
         return res.status(200).json({ isAuthenticated: false });
       }
-
-      const client = new CognitoIdentityProvider({
-        region: process.env.AWS_REGION,
-      });
 
       const params = {
         UserPoolId: poolData.UserPoolId,
