@@ -1,4 +1,5 @@
 import bodyParser from 'body-parser';
+import MongoDBStore from 'connect-mongodb-session';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -19,10 +20,21 @@ import { corsOptions } from './src/utils/cors';
 
 dotenv.config();
 
+const MongoDBStores = MongoDBStore(session);
+
 connectDB();
 const app: Express = express();
 const port = process.env.PORT;
 
+// Setup MongoDB session store
+const mongoUri = process.env.MONGODB_URI || '';
+
+const store = new MongoDBStores({
+  uri: mongoUri,
+  databaseName: 'recipe-session',
+  collection: 'sessions',
+  expires: 1000 * 60 * 60 * 24 * 7, // 1 week
+});
 // winston logger
 const logLevel = process.env.LOG_LEVEL || 'info';
 const winstonLogger = logger(logLevel);
@@ -40,12 +52,16 @@ app.use(cookieParser());
 
 app.use(
   session({
-    secret: process.env.AUTH0_SECRET || '', // used to sign the session ID cookie
-    resave: true, // forces the session to be saved back to the session store
-    saveUninitialized: true, // forces a session that is "uninitialized" to be saved to the store
-    cookie: { secure: true, domain: '.jamietoloui.com' }, // true in production to ensure session ID is sent over HTTPS
+    secret: process.env.AUTH0_SECRET || '',
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    },
+    store: store,
+    resave: true,
+    saveUninitialized: true,
   })
 );
+
 app.use((req, res, next) => {
   const sessionCookie = req.session?.user?.tokens.AccessToken;
   if (sessionCookie && req.cookies.app_session !== sessionCookie) {
