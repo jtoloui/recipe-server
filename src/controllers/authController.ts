@@ -455,6 +455,13 @@ export class AuthController {
     });
 
     try {
+      const client = new CognitoIdentityServiceProvider({
+        region: process.env.AWS_COGNITO_REGION,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+        },
+      });
       await client.adminConfirmSignUp({
         UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
         Username: username,
@@ -462,6 +469,8 @@ export class AuthController {
 
       res.status(200).json({ message: 'User created successfully' });
     } catch (error) {
+      console.log('here');
+
       winstonLogger.error('Error confirming user:', error);
       res.status(500).json({ message: 'Error confirming user', error });
     }
@@ -646,6 +655,13 @@ export class AuthController {
         Username: req.session?.user?.username,
       };
 
+      const client = new CognitoIdentityServiceProvider({
+        region: process.env.AWS_COGNITO_REGION,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+        },
+      });
       const user = await client.adminGetUser(params);
 
       if (!user.Enabled) {
