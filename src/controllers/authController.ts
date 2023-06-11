@@ -15,7 +15,7 @@ import {
 import axios from 'axios';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
-import { JwtPayload, decode } from 'jsonwebtoken';
+import { JwtPayload, decode, decode } from 'jsonwebtoken';
 
 import { managementClient } from '../auth/auth0Client';
 import { poolData, userPool } from '../auth/awsCognito';
@@ -674,17 +674,23 @@ export class AuthController {
   };
 
   isAuthenticated = async (req: Request, res: Response) => {
-    const sessionToken = req.session?.user?.tokens?.IdToken;
+    // const sessionToken = req.session?.user?.tokens?.IdToken;
     const cookieToken = req.cookies?.app_session;
-    const userName = req.session?.user?.username;
+    // const userName = req.session?.user?.username;
 
-    if (!sessionToken || !userName || !cookieToken) {
+    // if (!sessionToken || !userName || !cookieToken) {
+    //   return res.status(200).json({ isAuthenticated: false });
+    // }
+    if (!cookieToken) {
       return res.status(200).json({ isAuthenticated: false });
     }
 
+    const decoded = decode(cookieToken);
     const client = new CognitoIdentityProvider({
       region: process.env.AWS_REGION,
     });
+    console.log(decoded);
+    
 
     const params = {
       UserPoolId: poolData.UserPoolId,
