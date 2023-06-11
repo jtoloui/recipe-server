@@ -211,6 +211,7 @@ export class AuthController {
         res.cookie('app_session', accessToken, {
           httpOnly: true,
           secure: true, // Uncomment this line if you are using HTTPS
+          domain: '.jamietoloui.com',
         });
 
         return res.status(200).json({
@@ -633,6 +634,7 @@ export class AuthController {
       res.cookie('app_session', access_token, {
         httpOnly: true,
         secure: true,
+        domain: '.jamietoloui.com',
       });
       return res.redirect(process.env.WEB_APP_URI || '');
     } catch (error) {

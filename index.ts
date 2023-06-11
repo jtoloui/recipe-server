@@ -68,7 +68,11 @@ app.use(
 app.use((req, res, next) => {
   const sessionCookie = req.session?.user?.tokens.AccessToken;
   if (sessionCookie && req.cookies.app_session !== sessionCookie) {
-    res.cookie('app_session', sessionCookie, { httpOnly: true, secure: true });
+    res.cookie('app_session', sessionCookie, {
+      httpOnly: true,
+      secure: true,
+      domain: '.jamietoloui.com',
+    });
   }
   next();
 });
