@@ -58,7 +58,7 @@ app.use(
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       secure: true,
       httpOnly: true,
-      // domain: cookieDomainRootWithDot,
+      domain: cookieDomainRootWithDot,
     },
     store: store,
     resave: true,
@@ -74,7 +74,7 @@ app.use((req, res, next) => {
     res.cookie('app_session', sessionCookie, {
       httpOnly: true,
       secure: true,
-      // domain: cookieDomainRootWithDot,
+      domain: cookieDomainRootWithDot,
     });
   }
   next();
