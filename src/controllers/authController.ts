@@ -207,6 +207,14 @@ export class AuthController {
           },
           userGroups,
         };
+        req.session.save((err) => {
+          if (err) {
+            console.error(err);
+            return res.status(400).json({ message: 'User login failed', err });
+          }
+        });
+
+        console.log('req.session', req.session.cookie);
 
         // Set the name of the cookie to 'myAppName_AccessToken'
         res.cookie('app_session', accessToken, {
