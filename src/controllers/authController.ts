@@ -17,7 +17,6 @@ import crypto from 'crypto';
 import { Request, Response } from 'express';
 import { JwtPayload, decode } from 'jsonwebtoken';
 
-import { managementClient } from '../auth/auth0Client';
 import { poolData, userPool } from '../auth/awsCognito';
 import logger from '../logger/winston';
 
@@ -105,22 +104,20 @@ export class AuthController {
     req: Request<unknown, unknown, deleteUserBody>,
     res: Response
   ) => {
-    try {
-      const { id } = req.body;
-      const user = await managementClient.getUser({ id });
-
-      const deleted = await managementClient.deleteUser({
-        id: user.user_id ?? '',
-      });
-
-      return res.status(200).json({ message: 'User deleted', deleted });
-    } catch (error) {
-      this.logger.error('Error deleting user:', error);
-      return res.status(500).json({
-        message: 'Error deleting user',
-        error: error,
-      });
-    }
+    // try {
+    //   const { id } = req.body;
+    //   const user = await managementClient.getUser({ id });
+    //   const deleted = await managementClient.deleteUser({
+    //     id: user.user_id ?? '',
+    //   });
+    //   return res.status(200).json({ message: 'User deleted', deleted });
+    // } catch (error) {
+    //   this.logger.error('Error deleting user:', error);
+    //   return res.status(500).json({
+    //     message: 'Error deleting user',
+    //     error: error,
+    //   });
+    // }
   };
 
   getAllUsers = async (req: Request, res: Response) => {
