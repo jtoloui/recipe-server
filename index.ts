@@ -62,8 +62,8 @@ app.use(
       sameSite: 'lax',
     },
     store: store,
-    resave: true,
-    saveUninitialized: true,
+    resave: false,
+    saveUninitialized: false,
   })
 );
 
