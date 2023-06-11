@@ -70,7 +70,6 @@ app.use(cookieParser());
 app.use(
   session({
     secret: process.env.AUTH0_SECRET || '',
-    name: 'recipe-session',
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       secure: true,
