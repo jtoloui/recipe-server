@@ -254,6 +254,15 @@ export class AuthController {
       req.session.state = state;
       req.session.nonce = nonce;
 
+      req.session.save((err) => {
+        if (err) {
+          console.error(err);
+          return res.status(400).json({ message: 'User login failed', err });
+        }
+      });
+
+      console.log('(social) req.session', req.session.cookie);
+
       console.log('req.session.state', req.session.state);
 
       const cognitoAuthUrl = `https://${AWSDomain}/oauth2/authorize?identity_provider=${identityProvider}&redirect_uri=${callbackUrl}&response_type=${responseType}&client_id=${clientId}&state=${state}&scope=email%20openid%20profile%20aws.cognito.signin.user.admin&nonce=${nonce}&prompt=login`;
