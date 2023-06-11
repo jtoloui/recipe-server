@@ -57,7 +57,7 @@ app.use(
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       secure: true,
       httpOnly: true,
-      domain: 'www.jamietoloui.com',
+      domain: '.jamietoloui.com',
     },
     store: store,
     resave: true,
