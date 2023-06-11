@@ -244,7 +244,7 @@ export class AuthController {
       req.session.state = state;
       req.session.nonce = nonce;
 
-      const cognitoAuthUrl = `https://${AWSDomain}/oauth2/authorize?identity_provider=${identityProvider}&redirect_uri=${callbackUrl}&response_type=${responseType}&client_id=${clientId}&state=${state}&scope=email%20openid%20profile&nonce=${nonce}`;
+      const cognitoAuthUrl = `https://${AWSDomain}/oauth2/authorize?identity_provider=${identityProvider}&redirect_uri=${callbackUrl}&response_type=${responseType}&client_id=${clientId}&state=${state}&scope=email%20openid%20profile%20aws.cognito.signin.user.admin&nonce=${nonce}&prompt=login`;
 
       return res.status(200).json({ redirectUrl: cognitoAuthUrl });
     } catch (error) {
@@ -377,7 +377,10 @@ export class AuthController {
         }
       });
       res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
-      return res.status(200).json({ message: 'User logged out' });
+      const logoutGoogle = `${process.env.AWS_COGNITO_DOMAIN}/logout?client_id=${process.env.AWS_COGNITO_CLIENT_ID}&logout_uri=https://localhost:3000`;
+      return res
+        .status(200)
+        .json({ message: 'User logged out', url: logoutGoogle });
     }
     const cognitoUser = new CognitoUser({
       Username: username,
