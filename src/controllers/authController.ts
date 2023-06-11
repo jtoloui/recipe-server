@@ -245,7 +245,7 @@ export class AuthController {
 
       return res.status(200).json({ redirectUrl: cognitoAuthUrl });
     } catch (error) {
-      winstonLogger.error('Error logging in with social:', error);
+      this.logger.error('Error logging in with social:', error);
       return res
         .status(500)
         .json({ message: 'Error logging in with social', error });
@@ -352,7 +352,7 @@ export class AuthController {
   logout = async (req: Request, res: Response) => {
     const { user } = req.session;
     if (!user) {
-      winstonLogger.error('Not logged in');
+      this.logger.error('Not logged in');
       return res.status(401).json({ message: 'Not logged in' });
     }
 
@@ -362,14 +362,14 @@ export class AuthController {
       authType,
     } = user;
     if (!IdToken) {
-      winstonLogger.error('Invalid session');
+      this.logger.error('Invalid session');
       return res.status(401).json({ message: 'Invalid session' });
     }
 
     if (authType === 'social') {
       req.session.destroy((err) => {
         if (err) {
-          winstonLogger.error('(Social) Error logging out:', err);
+          this.logger.error('(Social) Error logging out:', err);
           return res.status(500).json({ message: 'Error logging out', err });
         }
       });
@@ -396,7 +396,7 @@ export class AuthController {
       onSuccess: (mes) => {
         req.session.destroy((err) => {
           if (err) {
-            winstonLogger.error('(Cognito) Error logging out:', err);
+            this.logger.error('(Cognito) Error logging out:', err);
             return res.status(500).send('Failed to log out');
           }
         });
@@ -404,7 +404,7 @@ export class AuthController {
         return res.status(200).send('Logged out successfully');
       },
       onFailure: (err) => {
-        winstonLogger.error('(Cognito) Error logging out:', err);
+        this.logger.error('(Cognito) Error logging out:', err);
         return res.status(500).send('Failed to sign out');
       },
     });
@@ -471,7 +471,7 @@ export class AuthController {
     } catch (error) {
       console.log('here');
 
-      winstonLogger.error('Error confirming user:', error);
+      this.logger.error('Error confirming user:', error);
       res.status(500).json({ message: 'Error confirming user', error });
     }
   };
@@ -634,7 +634,7 @@ export class AuthController {
       });
       return res.redirect(process.env.WEB_APP_URI || '');
     } catch (error) {
-      winstonLogger.error('Error getting tokens:', error);
+      this.logger.error('Error getting tokens:', error);
 
       res.status(500).send(JSON.stringify(error));
     }
@@ -670,7 +670,7 @@ export class AuthController {
         return res.status(200).json({ isAuthenticated: true });
       }
     } catch (error) {
-      winstonLogger.error('Error getting tokens:', error);
+      this.logger.error('Error getting tokens:', error);
       return res.status(500).json({ isAuthenticated: false });
     }
   };
