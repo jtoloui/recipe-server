@@ -26,6 +26,7 @@ connectDB();
 const app: Express = express();
 const port = process.env.PORT;
 
+app.set('trust proxy', 1);
 // Setup MongoDB session store
 const mongoUri = process.env.MONGODB_URI || '';
 
@@ -41,7 +42,6 @@ const winstonLogger = logger(logLevel);
 
 // middleware - custom
 app.use(assignId);
-
 // middleware - third party
 // app.use(helmet());
 // app.use(cors(corsOptions));

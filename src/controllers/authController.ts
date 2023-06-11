@@ -658,14 +658,13 @@ export class AuthController {
         },
       };
 
-      console.log('callback', req.sessionID);
-
       req.session.save((err) => {
         if (err) {
           console.error(err);
           return res.status(500).send(err.message);
         }
         console.log('session saved', req.session);
+        console.log('callback', req.sessionID);
       });
 
       // At this point, the application should store these tokens securely and use them for subsequent API requests.
