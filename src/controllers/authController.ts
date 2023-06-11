@@ -377,7 +377,7 @@ export class AuthController {
         }
       });
       res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
-      const logoutGoogle = `${process.env.AWS_COGNITO_DOMAIN}/logout?client_id=${process.env.AWS_COGNITO_CLIENT_ID}&logout_uri=https://localhost:3000`;
+      const logoutGoogle = `${process.env.AWS_COGNITO_DOMAIN}/logout?client_id=${process.env.AWS_COGNITO_CLIENT_ID}&logout_uri=${process.env.WEB_APP_URI}`;
       return res
         .status(200)
         .json({ message: 'User logged out', url: logoutGoogle });
@@ -573,11 +573,13 @@ export class AuthController {
       return;
     }
 
+    const callbackUrl = `${process.env.API_APP_URI}/auth/callback`;
+
     const params = {
       grant_type: 'authorization_code',
       client_id: process.env.AWS_COGNITO_CLIENT_ID,
       code,
-      redirect_uri: 'https://localhost:3001/auth/callback', // replace with your actual redirect URI
+      redirect_uri: callbackUrl, // replace with your actual redirect URI
     };
 
     try {

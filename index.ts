@@ -56,7 +56,7 @@ app.use(
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
       secure: true,
-      domain: 'jamietoloui.com',
+      domain: '.jamietoloui.com',
     },
     store: store,
     resave: true,
