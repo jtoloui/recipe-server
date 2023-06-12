@@ -463,8 +463,8 @@ export class AuthController {
         [],
         async (err, result) => {
           if (err) {
-            console.error(err);
-            return res.status(400).send(err.message);
+            this.logger.error('Error signing up:', err);
+            return res.status(409).json({ message: 'Error signing up', err });
           } else {
             await this.client.adminConfirmSignUp({
               UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
