@@ -97,10 +97,18 @@ const addUserToUserGroup = async (username: string) => {
 
 export class AuthController {
   private logger: ReturnType<typeof logger>;
+  private client: CognitoIdentityServiceProvider;
 
   constructor() {
     const logLevel = process.env.LOG_LEVEL || 'info';
     this.logger = logger(logLevel, 'AuthController');
+    this.client = new CognitoIdentityServiceProvider({
+      region: process.env.AWS_COGNITO_REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+      },
+    });
   }
 
   deleteUser = async (
@@ -447,27 +455,25 @@ export class AuthController {
       })
     );
 
-    userPool.signUp(username, password, userAttributes, [], (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(400).send(err.message);
-      }
-    });
-
     try {
-      const client = new CognitoIdentityServiceProvider({
-        region: process.env.AWS_COGNITO_REGION,
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-        },
-      });
-      await client.adminConfirmSignUp({
-        UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
-        Username: username,
-      });
-
-      res.status(200).json({ message: 'User created successfully' });
+      userPool.signUp(
+        username,
+        password,
+        userAttributes,
+        [],
+        async (err, result) => {
+          if (err) {
+            console.error(err);
+            return res.status(400).send(err.message);
+          } else {
+            await this.client.adminConfirmSignUp({
+              UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+              Username: result?.user.getUsername() || '',
+            });
+            res.status(200).json({ message: 'User created successfully' });
+          }
+        }
+      );
     } catch (error) {
       console.log('here');
 
@@ -655,14 +661,7 @@ export class AuthController {
         Username: req.session?.user?.username,
       };
 
-      const client = new CognitoIdentityServiceProvider({
-        region: process.env.AWS_COGNITO_REGION,
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-        },
-      });
-      const user = await client.adminGetUser(params);
+      const user = await this.client.adminGetUser(params);
 
       if (!user.Enabled) {
         return res.status(200).json({ isAuthenticated: false });
