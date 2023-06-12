@@ -32,8 +32,8 @@ const mongoUri = process.env.MONGODB_URI || '';
 
 const store = new MongoDBStores({
   uri: mongoUri,
-  databaseName: 'recipe-session',
-  collection: 'sessions',
+  databaseName: process.env.MONGODB_SESSION_DB || 'recipe-app',
+  collection: process.env.MONGODB_SESSION_COLLECTION || 'sessions',
   expires: 1000 * 60 * 60 * 24 * 7, // 1 week
 });
 
