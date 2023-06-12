@@ -77,7 +77,7 @@
     "vegan": false,
     "vegetarian": false,
     "cuisine": "Italian",
-    "creatorAuth0Sub": "abcdef123456"
+    "creatorId": "abcdef123456"
   },
   {
     "name": "Chicken Stir-Fry",
@@ -175,7 +175,7 @@
     "vegan": false,
     "vegetarian": false,
     "cuisine": "Asian",
-    "creatorAuth0Sub": "123456abcdef"
+    "creatorId": "123456abcdef"
   },
   {
     "name": "Caprese Salad",
@@ -251,7 +251,7 @@
     "vegan": false,
     "vegetarian": true,
     "cuisine": "Italian",
-    "creatorAuth0Sub": "abcdef123456"
+    "creatorId": "abcdef123456"
   },
   {
     "name": "Vegan Lentil Soup",
@@ -352,7 +352,7 @@
     "vegan": true,
     "vegetarian": true,
     "cuisine": "International",
-    "creatorAuth0Sub": "123456abcdef"
+    "creatorId": "123456abcdef"
   },
   {
     "name": "Beef Tacos",
@@ -454,7 +454,7 @@
     "vegan": false,
     "vegetarian": false,
     "cuisine": "Mexican",
-    "creatorAuth0Sub": "abcdef123456"
+    "creatorId": "abcdef123456"
   },
   {
     "name": "Pesto Pasta",
@@ -533,7 +533,7 @@
     "vegan": false,
     "vegetarian": true,
     "cuisine": "Italian",
-    "creatorAuth0Sub": "123456abcdef"
+    "creatorId": "123456abcdef"
   },
   {
     "name": "Miso Soup",
@@ -600,7 +600,7 @@
     "vegan": true,
     "vegetarian": true,
     "cuisine": "Japanese",
-    "creatorAuth0Sub": "abcdef123456"
+    "creatorId": "abcdef123456"
   },
   {
     "name": "Caesar Salad",
@@ -694,7 +694,7 @@
     "vegan": false,
     "vegetarian": true,
     "cuisine": "International",
-    "creatorAuth0Sub": "123456abcdef"
+    "creatorId": "123456abcdef"
   },
   {
     "name": "Chicken Parmesan",
@@ -788,7 +788,7 @@
     "vegan": false,
     "vegetarian": false,
     "cuisine": "Italian",
-    "creatorAuth0Sub": "abcdef123456"
+    "creatorId": "abcdef123456"
   },
   {
     "name": "Spinach and Feta Stuffed Chicken",
@@ -867,7 +867,7 @@
     "vegan": false,
     "vegetarian": false,
     "cuisine": "International",
-    "creatorAuth0Sub": "123456abcdef"
+    "creatorId": "123456abcdef"
   },
   {
     "name": "Vegetable Stir-Fry",
@@ -958,7 +958,7 @@
     "vegan": true,
     "vegetarian": true,
     "cuisine": "Asian",
-    "creatorAuth0Sub": "abcdef123456"
+    "creatorId": "abcdef123456"
   },
   {
     "name": "Ratatouille",
@@ -1050,6 +1050,6 @@
     "vegan": true,
     "vegetarian": true,
     "cuisine": "French",
-    "creatorAuth0Sub": "123456abcdef"
+    "creatorId": "123456abcdef"
   }
 ]

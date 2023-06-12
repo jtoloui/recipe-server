@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 
-import RecipeModel, { RecipeAttributes } from '../models/recipe';
 import logger from '../logger/winston';
+import RecipeModel, { RecipeAttributes } from '../models/recipe';
 
 type getRecipesByLabelParams = {
   label: string;
@@ -37,7 +37,7 @@ export class RecipeController {
         steps: 1,
         vegan: 1,
         vegetarian: 1,
-        creatorAuth0Sub: 1,
+        creatorId: 1,
         recipeAuthor: 1,
         difficulty: 1,
         portions: 1,
@@ -47,7 +47,7 @@ export class RecipeController {
       };
       const recipe = await RecipeModel.findById(req.params.id, findReturnItems);
       if (recipe) {
-        const isAuthor = recipe.creatorAuth0Sub === req.oidc.user?.sub;
+        const isAuthor = recipe.creatorId === req.session?.user?.sub;
         return res.status(200).json({ ...recipe.toObject(), isAuthor });
       } else {
         return res.status(404).json({ message: 'Recipe not found' });

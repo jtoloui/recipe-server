@@ -1,36 +1,49 @@
-import express, { Express } from 'express';
-import dotenv from 'dotenv';
-import helmet from 'helmet';
-import cors from 'cors';
 import bodyParser from 'body-parser';
-import fs from 'fs';
-import https from 'https';
+import MongoDBStore from 'connect-mongodb-session';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import express, { Express } from 'express';
+import session from 'express-session';
 import expressWinston from 'express-winston';
-import { auth } from 'express-openid-connect';
+import fs from 'fs';
+import helmet from 'helmet';
+import https from 'https';
 
-import assignId from './src/middleware/requestId';
-import logger from './src/logger/winston';
 import { connectDB } from './src/db';
-import { corsOptions } from './src/utils/cors';
-import { config } from './src/utils/authConfig';
-
+import logger from './src/logger/winston';
+import assignId from './src/middleware/requestId';
 // routes
 import apiRoutes from './src/routes/apiRoutes';
 import authRoutes from './src/routes/authRoutes';
-import profileRoutes from './src/routes/profileRoutes';
+import { corsOptions } from './src/utils/cors';
 
 dotenv.config();
+const MongoDBStores = MongoDBStore(session);
 
 connectDB();
 const app: Express = express();
 const port = process.env.PORT;
 
+// allow proxy from cloudfare
+app.set('trust proxy', 1);
+// Setup MongoDB session store
+const mongoUri = process.env.MONGODB_URI || '';
+
+const store = new MongoDBStores({
+  uri: mongoUri,
+  databaseName: process.env.MONGODB_SESSION_DB || 'recipe-app',
+  collection: process.env.MONGODB_SESSION_COLLECTION || 'session',
+  expires: 1000 * 60 * 60 * 24 * 7, // 1 week
+});
+
+const domain = process.env.API_APP_URI || '';
+const domainParts = domain.split('.');
+const domainRoot = domainParts.slice(1).join('.');
+const domainRootWithDot = `.${domainRoot}`;
 // winston logger
 const logLevel = process.env.LOG_LEVEL || 'info';
 const winstonLogger = logger(logLevel);
-
-// middleware - auth
-app.use(auth(config));
 
 // middleware - custom
 app.use(assignId);
@@ -41,6 +54,35 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
+
+app.use(
+  session({
+    secret: process.env.AUTH0_SECRET || '',
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      secure: true,
+      httpOnly: true,
+      domain: `.${process.env.COOKIE_DOMAIN}`,
+      sameSite: 'lax',
+    },
+    store: store,
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+
+app.use((req, res, next) => {
+  const sessionCookie = req.session?.user?.tokens.AccessToken;
+  if (sessionCookie && req.cookies.app_session !== sessionCookie) {
+    res.cookie('app_session', sessionCookie, {
+      httpOnly: true,
+      secure: true,
+      domain: domainRootWithDot,
+    });
+  }
+  next();
+});
 
 // Middleware to log HTTP requests
 app.use(
@@ -57,9 +99,11 @@ app.use(
       return level;
     },
     msg: (req, res) =>
-      `UserId: ${req.oidc.user?.sub || 'N/A'} - Request ID: ${req.id} - HTTP ${
-        req.method
-      } ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
+      `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${
+        req.id
+      } - HTTP ${req.method} ${req.url} - Status: ${res.statusCode} - ${
+        res.statusMessage
+      }`,
   })
 );
 

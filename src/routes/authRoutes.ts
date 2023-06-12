@@ -1,82 +1,21 @@
-import express, { Request, Response } from 'express';
-import { managementClient } from '../auth/auth0Client';
-import { isAdmin } from '../middleware/auth';
+import express from 'express';
+
+import { AuthController } from '../controllers/authController';
+import { isAdmin } from '../middleware/authenticated';
 
 const router = express.Router();
+const authController = new AuthController();
 
-router.post('/register', async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+router.post('/delete/user', isAdmin, authController.deleteUser);
+router.get('/users', isAdmin, authController.getAllUsers);
+router.post('/login', authController.login);
+router.get('/login-social', authController.loginSocial);
+router.get('/logout', authController.logout);
+router.post('/register', authController.signUp);
+router.post('/verify/email', authController.verifyEmail);
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/forgot-password/confirm', authController.forgotPasswordConfirm);
+router.get('/callback', authController.callBack);
+router.get('/authenticated', authController.isAuthenticated);
 
-  try {
-    const user = await managementClient.createUser({
-      connection: 'Username-Password-Authentication', // Replace this with the name of your Auth0 connection
-      email,
-      password,
-      user_metadata: {
-        timezone: 'Europe/London',
-      },
-    });
-
-    const assigned = await managementClient.assignRolestoUser(
-      {
-        id: user.user_id || '',
-      },
-      {
-        roles: ['rol_rsNOujhucO6Kb1jX'],
-      }
-    );
-
-    const roles = await managementClient.getUserRoles({
-      id: user.user_id || '',
-    });
-
-    res.status(201).json({ message: 'User created', user });
-  } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({ message: 'Error creating user', error: error });
-  }
-});
-
-router.post('/delete/user', isAdmin, async (req: Request, res: Response) => {
-  const { id } = req.body;
-
-  try {
-    const user = await managementClient.getUser({ id });
-
-    const deleted = await managementClient.deleteUser({
-      id: user.user_id ?? '',
-    });
-
-    res.status(200).json({ message: 'User deleted', deleted });
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    res.status(500).json({
-      message: 'Error deleting user',
-      error: error,
-    });
-  }
-});
-
-router.get('/users', isAdmin, async (req: Request, res: Response) => {
-  try {
-    const users = await managementClient.getUsers();
-
-    res.status(200).json({ message: 'Users fetched', users });
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ message: 'Error fetching users', error });
-  }
-});
-
-router.get('/login', (req: Request, res: Response) => {
-  res.oidc.login({ returnTo: process.env.WEB_APP_URI });
-});
-
-router.get('/authenticated', (req: Request, res: Response) => {
-  if (req.oidc.isAuthenticated()) {
-    return res.json({ isAuthenticated: true });
-  } else {
-    return res.json({ isAuthenticated: false });
-  }
-});
 export default router;

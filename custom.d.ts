@@ -1,5 +1,6 @@
 // import { Request } from 'express';
 import { RequestContext } from 'express-openid-connect';
+
 interface UserRequestContext extends RequestContext {
   user?: {
     sub: string;
@@ -38,5 +39,31 @@ declare module 'express-serve-static-core' {
         'http://toloui-recipe.com/time-zone': string;
       };
     };
+  }
+}
+
+declare module 'express-session' {
+  interface Session {
+    user?: {
+      username: string;
+      sub: string;
+      givenName: string;
+      familyName: string;
+      name: string;
+      email: string;
+      tokens: {
+        AccessToken: string;
+        IdToken: string;
+        RefreshToken: string;
+      };
+      userGroups: string[] | undefined;
+      authType?: string;
+      provider?: {
+        userId: string;
+        providerType: string;
+      };
+    };
+    state: string;
+    nonce: string;
   }
 }
