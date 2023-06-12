@@ -43,7 +43,16 @@ const domainRoot = domainParts.slice(1).join('.');
 const domainRootWithDot = `.${domainRoot}`;
 // winston logger
 const logLevel = process.env.LOG_LEVEL || 'info';
-const winstonLogger = logger(logLevel);
+const winstonLogger = logger(logLevel, 'server');
+const winstonLoggerMiddleware = logger(logLevel);
+
+store.on('error', (error) => {
+  winstonLogger.error(error);
+});
+
+store.on('connected', () => {
+  winstonLogger.info('MongoDB session store connected');
+});
 
 // middleware - custom
 app.use(assignId);
@@ -87,7 +96,7 @@ app.use((req, res, next) => {
 // Middleware to log HTTP requests
 app.use(
   expressWinston.logger({
-    winstonInstance: winstonLogger,
+    winstonInstance: winstonLoggerMiddleware,
     meta: false,
     level: (_, res) => {
       let level = 'info';
@@ -116,10 +125,14 @@ if (process.env.NODE_ENV !== 'production') {
   const cert = fs.readFileSync('./certs/localhost.pem');
 
   https.createServer({ key, cert }, app).listen(port, () => {
-    console.log(`⚡️[server]: Server is running at https://localhost:${port}`);
+    winstonLogger.info(
+      `⚡️[server]: Server is running at https://localhost:${port}`
+    );
   });
 } else {
   app.listen(port, () => {
-    console.log(`⚡️[server]: Server is running at http://localhost:${port}`);
+    winstonLogger.info(
+      `⚡️[server]: Server is running at http://localhost:${port}`
+    );
   });
 }
