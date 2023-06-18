@@ -36,7 +36,7 @@ export interface RecipeAttributes {
   labels: string[];
   portions: string;
   description: string;
-  nutrition: Nutrition | null;
+  nutrition: Partial<Nutrition> | null;
   ingredients: Ingredient[];
   steps: string[];
   vegan: boolean;
