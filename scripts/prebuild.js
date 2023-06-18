@@ -5,7 +5,7 @@ const gitRev = require('git-rev-sync');
 const package = require('../package.json');
 
 const data = {
-	buildTime: new Date().toISOString(),
+	buildTime: new Date(new Date().toUTCString()).toISOString(),
 	commitHash: gitRev.short(),
 	version: package.version, // Optional: include the app version
 };

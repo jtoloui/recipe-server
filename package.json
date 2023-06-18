@@ -7,9 +7,9 @@
     "node": "18.x"
   },
   "scripts": {
-    "prebuild": "node ./scripts/prebuild.js",
-    "build": "TZ=utc tsc",
-    "start": "TZ=utc node dist/index.js",
+    "prebuild": "TZ=UTC node ./scripts/prebuild.js",
+    "build": "TZ=UTC tsc",
+    "start": "TZ=UTC node dist/index.js",
     "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\"",
     "prettier": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\" index.ts"
   },
