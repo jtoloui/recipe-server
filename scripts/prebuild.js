@@ -10,4 +10,6 @@ const data = {
 	version: package.version, // Optional: include the app version
 };
 
-fs.writeFileSync(path.join(__dirname, '../dist/build-info.json',), JSON.stringify(data), { overwrite: true });
+fs.mkdirSync(path.join(__dirname, '../dist'));
+fs.writeFileSync(path.join(__dirname, '../dist/build-info.json'), JSON.stringify(data));
+
