@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
+import { z } from 'zod';
 
 import logger from '../logger/winston';
 import RecipeModel, { RecipeAttributes } from '../models/recipe';
+import { getMeasurementsType, groupRecipesByLabel } from '../queries';
+import { convertRecipeZodToMongo, createRecipeSchema } from '../schemas';
 
 type getRecipesByLabelParams = {
   label: string;
@@ -59,12 +62,29 @@ export class RecipeController {
   };
 
   createRecipe = async (req: Request, res: Response) => {
-    const newRecipe = RecipeModel.build(req.body as RecipeAttributes);
     try {
+      const validatedReqData = await createRecipeSchema.parseAsync(req.body);
+      const newRecipeData = convertRecipeZodToMongo(validatedReqData);
+      const { labels } = newRecipeData;
+      const capitalizedLabels = labels.map(
+        (label) => label.charAt(0).toUpperCase() + label.slice(1)
+      );
+
+      const newRecipe = await RecipeModel.create({
+        ...newRecipeData,
+        creatorId: req.session?.user?.sub,
+        recipeAuthor: req.session?.user?.name,
+        labels: capitalizedLabels,
+      });
       await newRecipe.validate();
       await newRecipe.save();
+
       return res.status(201).json(newRecipe);
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        this.logger.error(`Request ID: ${req.id} - ${error.errors}`);
+        return res.status(400).json({ message: 'Invalid request data', error });
+      }
       this.logger.error(`Request ID: ${req.id} - ${error}`);
       return res.status(500).json({ message: 'Error creating recipe' });
     }
@@ -72,41 +92,7 @@ export class RecipeController {
 
   getRecipesLabels = async (req: Request, res: Response) => {
     try {
-      const labels = await RecipeModel.aggregate([
-        {
-          $facet: {
-            totalRecipes: [
-              {
-                $count: 'total',
-              },
-            ],
-            labelCounts: [
-              {
-                $unwind: '$labels',
-              },
-              {
-                $group: {
-                  _id: '$labels',
-                  count: { $sum: 1 },
-                },
-              },
-              {
-                $project: {
-                  _id: 0,
-                  label: '$_id',
-                  count: 1,
-                },
-              },
-            ],
-          },
-        },
-        {
-          $project: {
-            totalRecipes: { $arrayElemAt: ['$totalRecipes.total', 0] },
-            labelCounts: 1,
-          },
-        },
-      ]);
+      const labels = await RecipeModel.aggregate(groupRecipesByLabel);
 
       return res.status(200).json({ ...labels[0] });
     } catch (error) {
@@ -136,29 +122,93 @@ export class RecipeController {
       if (label.toLocaleLowerCase() === 'all') {
         const recipes = await RecipeModel.find({}, findReturnItems);
         const recipesWithTotalTime = recipes.map((recipe) => {
-          const totalHours = recipe.timeToCook.totalHours;
-          const totalMinutes = recipe.timeToCook.totalMinutes;
+          const totalHours = recipe.timeToCook.totalHours || 0;
+          const totalMinutes = recipe.timeToCook.totalMinutes || 0;
           const totalTime =
-            totalHours >= 1 ? `${totalHours} hrs` : `${totalMinutes} mins`;
+            totalHours >= 1
+              ? `${parseFloat(totalHours.toFixed(2))} hrs`
+              : `${parseFloat(totalMinutes.toFixed(2))} mins`;
           return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
         });
         return res.status(200).json(recipesWithTotalTime);
       }
       const recipes = await RecipeModel.find(
-        { labels: label },
+        { labels: { $regex: new RegExp(`^${label}$`, 'i') } },
         findReturnItems
       );
       const recipesWithTotalTime = recipes.map((recipe) => {
-        const totalHours = recipe.timeToCook.totalHours;
-        const totalMinutes = recipe.timeToCook.totalMinutes;
+        const totalHours = recipe.timeToCook.totalHours || 0;
+        const totalMinutes = recipe.timeToCook.totalMinutes || 0;
         const totalTime =
-          totalHours >= 1 ? `${totalHours} hrs` : `${totalMinutes} mins`;
+          totalHours >= 1
+            ? `${parseFloat(totalHours.toFixed(2))} hrs`
+            : `${parseFloat(totalMinutes.toFixed(2))} mins`;
         return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
       });
       return res.status(200).json(recipesWithTotalTime);
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
       return res.status(500).json({ message: 'Error retrieving recipes' });
+    }
+  };
+
+  measurementsType = async (req: Request, res: Response) => {
+    try {
+      const measurementsAgg = await RecipeModel.aggregate(getMeasurementsType);
+      return res
+        .status(200)
+        .json({ measurements: measurementsAgg[0].measurements });
+    } catch (error) {
+      this.logger.error(`Request ID: ${req.id} - ${error}`);
+      return res.status(500).json({ message: 'Error retrieving measurements' });
+    }
+  };
+
+  getPopularLabels = async (req: Request, res: Response) => {
+    try {
+      const popularLabels = await RecipeModel.aggregate([
+        { $unwind: '$labels' },
+        {
+          $group: {
+            _id: { $toLower: '$labels' },
+            count: { $sum: 1 },
+          },
+        },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+        {
+          $addFields: {
+            capitalizedLabel: {
+              $concat: [
+                {
+                  $toUpper: {
+                    $substrCP: ['$_id', 0, 1],
+                  },
+                },
+                {
+                  $substrCP: [
+                    '$_id',
+                    1,
+                    {
+                      $subtract: [{ $strLenCP: '$_id' }, 1],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            labels: { $push: '$capitalizedLabel' },
+          },
+        },
+      ]);
+      return res.status(200).json({ ...popularLabels[0] });
+    } catch (error) {
+      this.logger.error(`Request ID: ${req.id} - ${error}`);
+      return res.status(500).json({ message: 'Error retrieving labels' });
     }
   };
 }

@@ -19,6 +19,18 @@ router.get('/recipes', isAuthenticated, recipeController.getAllRecipes);
 router.get('/recipes/:id', isAuthenticated, recipeController.getRecipeById);
 router.post('/recipes', isAuthenticated, recipeController.createRecipe);
 
+router.get(
+  '/popular/measurements',
+  isAuthenticated,
+  recipeController.measurementsType
+);
+
+router.get(
+  '/popular/labels',
+  isAuthenticated,
+  recipeController.getPopularLabels
+);
+
 router.get('/labels', isAuthenticated, recipeController.getRecipesLabels);
 router.get(
   '/labels/:label',

@@ -3,20 +3,20 @@ import mongoose, { Document, Schema } from 'mongoose';
 interface TimeToCook {
   Cook: number;
   Prep: number;
-  totalMinutes: number;
-  totalHours: number;
-  totalDays: number;
+  totalMinutes?: number;
+  totalHours?: number;
+  totalDays?: number;
 }
 
 interface Nutrition {
-  kcal: number;
-  sugars: number;
-  salt: number;
-  carbs: number;
-  protein: number;
-  fat: number;
-  saturates: number;
-  fibre: number;
+  kcal?: number | null;
+  sugars?: number | null;
+  salt?: number | null;
+  carbs?: number | null;
+  protein?: number | null;
+  fat?: number | null;
+  saturates?: number | null;
+  fibre?: number | null;
 }
 
 interface Ingredient {
@@ -36,7 +36,7 @@ export interface RecipeAttributes {
   labels: string[];
   portions: string;
   description: string;
-  nutrition: Partial<Nutrition> | null;
+  nutrition: Nutrition | undefined;
   ingredients: Ingredient[];
   steps: string[];
   vegan: boolean;
@@ -44,6 +44,15 @@ export interface RecipeAttributes {
   cuisine: string;
   creatorId: string;
 }
+
+export type CreateRecipeModelData = Omit<
+  RecipeAttributes,
+  | 'creatorId'
+  | 'recipeAuthor'
+  | 'timeToCook.totalMinutes'
+  | 'timeToCook.totalHours'
+  | 'timeToCook.totalDays'
+>;
 
 const timeToCookSchema = new Schema<TimeToCook>(
   {
