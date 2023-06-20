@@ -610,7 +610,8 @@ export class AuthController {
           userId: string;
         };
       }
-      const decoded = decode(id_token) as ExJwtPayload;
+
+      const decoded = jwt.decode(id_token) as ExJwtPayload;
 
       req.session.user = {
         username: decoded['cognito:username'],
