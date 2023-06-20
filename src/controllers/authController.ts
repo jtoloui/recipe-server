@@ -653,11 +653,23 @@ export class AuthController {
       const userName = req.session?.user?.username;
 
       if (!sessionToken || !userName || !cookieToken) {
+        req.session.destroy((err) => {
+          if (err) {
+            this.logger.error('Error destroying session:', err);
+            return res.status(500).json({ isAuthenticated: false });
+          }
+        });
         return res.status(200).json({ isAuthenticated: false });
       }
       const decoded = jwt.decode(sessionToken);
 
       if (typeof decoded !== 'object' || decoded === null) {
+        req.session.destroy((err) => {
+          if (err) {
+            this.logger.error('Error destroying session:', err);
+            return res.status(500).json({ isAuthenticated: false });
+          }
+        });
         return res.status(200).json({ isAuthenticated: false });
       }
 
@@ -671,12 +683,34 @@ export class AuthController {
       const user = await this.client.adminGetUser(params);
 
       if (!user.Enabled) {
+        req.session.destroy((err) => {
+          if (err) {
+            this.logger.error('Error destroying session:', err);
+            return res.status(500).json({ isAuthenticated: false });
+          }
+        });
         return res.status(200).json({ isAuthenticated: false });
       } else {
-        return res.status(200).json({ isAuthenticated: !isExpired });
+        if (isExpired) {
+          req.session.destroy((err) => {
+            if (err) {
+              this.logger.error('Error destroying session:', err);
+              return res.status(500).json({ isAuthenticated: false });
+            }
+          });
+          return res.status(200).json({ isAuthenticated: false });
+        } else {
+          return res.status(200).json({ isAuthenticated: true });
+        }
       }
     } catch (error) {
       this.logger.error('Error getting tokens:', error);
+      req.session.destroy((err) => {
+        if (err) {
+          this.logger.error('Error destroying session:', err);
+          return res.status(500).json({ isAuthenticated: false });
+        }
+      });
       return res.status(500).json({ isAuthenticated: false });
     }
   };
