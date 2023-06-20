@@ -54,6 +54,8 @@ export type CreateRecipeModelData = Omit<
   | 'timeToCook.totalMinutes'
   | 'timeToCook.totalHours'
   | 'timeToCook.totalDays'
+  | 'createdAt'
+  | 'updatedAt'
 >;
 
 const timeToCookSchema = new Schema<TimeToCook>(

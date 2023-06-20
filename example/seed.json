@@ -77,7 +77,9 @@
     "vegan": false,
     "vegetarian": false,
     "cuisine": "Italian",
-    "creatorId": "abcdef123456"
+    "creatorId": "abcdef123456",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Chicken Stir-Fry",
@@ -175,7 +177,9 @@
     "vegan": false,
     "vegetarian": false,
     "cuisine": "Asian",
-    "creatorId": "123456abcdef"
+    "creatorId": "123456abcdef",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Caprese Salad",
@@ -251,7 +255,9 @@
     "vegan": false,
     "vegetarian": true,
     "cuisine": "Italian",
-    "creatorId": "abcdef123456"
+    "creatorId": "abcdef123456",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Vegan Lentil Soup",
@@ -352,7 +358,9 @@
     "vegan": true,
     "vegetarian": true,
     "cuisine": "International",
-    "creatorId": "123456abcdef"
+    "creatorId": "123456abcdef",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Beef Tacos",
@@ -454,7 +462,9 @@
     "vegan": false,
     "vegetarian": false,
     "cuisine": "Mexican",
-    "creatorId": "abcdef123456"
+    "creatorId": "abcdef123456",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Pesto Pasta",
@@ -533,7 +543,9 @@
     "vegan": false,
     "vegetarian": true,
     "cuisine": "Italian",
-    "creatorId": "123456abcdef"
+    "creatorId": "123456abcdef",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Miso Soup",
@@ -600,7 +612,9 @@
     "vegan": true,
     "vegetarian": true,
     "cuisine": "Japanese",
-    "creatorId": "abcdef123456"
+    "creatorId": "abcdef123456",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Caesar Salad",
@@ -694,7 +708,9 @@
     "vegan": false,
     "vegetarian": true,
     "cuisine": "International",
-    "creatorId": "123456abcdef"
+    "creatorId": "123456abcdef",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Chicken Parmesan",
@@ -788,7 +804,9 @@
     "vegan": false,
     "vegetarian": false,
     "cuisine": "Italian",
-    "creatorId": "abcdef123456"
+    "creatorId": "abcdef123456",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Spinach and Feta Stuffed Chicken",
@@ -867,7 +885,9 @@
     "vegan": false,
     "vegetarian": false,
     "cuisine": "International",
-    "creatorId": "123456abcdef"
+    "creatorId": "123456abcdef",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Vegetable Stir-Fry",
@@ -958,7 +978,9 @@
     "vegan": true,
     "vegetarian": true,
     "cuisine": "Asian",
-    "creatorId": "abcdef123456"
+    "creatorId": "abcdef123456",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   },
   {
     "name": "Ratatouille",
@@ -1050,6 +1072,8 @@
     "vegan": true,
     "vegetarian": true,
     "cuisine": "French",
-    "creatorId": "123456abcdef"
+    "creatorId": "123456abcdef",
+    "createdAt": "2020-01-01T00:00:00.000Z",
+    "updatedAt": "2020-01-01T00:00:00.000Z"
   }
 ]
