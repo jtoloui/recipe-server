@@ -120,8 +120,8 @@ const recipeSchema = new Schema<Recipe>(
     steps: { type: [String], required: true },
     cuisine: { type: String, required: true },
     creatorId: { type: String, required: true },
-    createdAt: { type: Date, required: true },
-    updatedAt: { type: Date, required: true },
+    createdAt: { type: Date, required: false },
+    updatedAt: { type: Date, required: false },
   },
   {
     timestamps: true,
