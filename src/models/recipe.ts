@@ -43,6 +43,8 @@ export interface RecipeAttributes {
   vegetarian: boolean;
   cuisine: string;
   creatorId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export type CreateRecipeModelData = Omit<
@@ -94,28 +96,35 @@ const ingredientSchema = new Schema<Ingredient>({
   quantity: Number,
 });
 
-const recipeSchema = new Schema<Recipe>({
-  name: { type: String, required: true, index: true },
-  imageSrc: { type: String, required: false, default: null },
-  recipeAuthor: { type: String, required: true, index: true },
-  timeToCook: { type: timeToCookSchema, required: true },
-  difficulty: {
-    type: String,
-    required: false,
-    default: null,
-    enum: ['Easy', 'Medium', 'Hard'],
+const recipeSchema = new Schema<Recipe>(
+  {
+    name: { type: String, required: true, index: true },
+    imageSrc: { type: String, required: false, default: null },
+    recipeAuthor: { type: String, required: true, index: true },
+    timeToCook: { type: timeToCookSchema, required: true },
+    difficulty: {
+      type: String,
+      required: false,
+      default: null,
+      enum: ['Easy', 'Medium', 'Hard'],
+    },
+    labels: { type: [String], required: false, default: null, index: true },
+    portions: { type: String, required: true },
+    description: { type: String, required: true },
+    nutrition: { type: nutritionSchema, required: false, default: null },
+    vegan: { type: Boolean, required: false },
+    vegetarian: { type: Boolean, required: false },
+    ingredients: { type: [ingredientSchema], required: true },
+    steps: { type: [String], required: true },
+    cuisine: { type: String, required: true },
+    creatorId: { type: String, required: true },
+    createdAt: { type: Date, required: true },
+    updatedAt: { type: Date, required: true },
   },
-  labels: { type: [String], required: false, default: null, index: true },
-  portions: { type: String, required: true },
-  description: { type: String, required: true },
-  nutrition: { type: nutritionSchema, required: false, default: null },
-  vegan: { type: Boolean, required: false },
-  vegetarian: { type: Boolean, required: false },
-  ingredients: { type: [ingredientSchema], required: true },
-  steps: { type: [String], required: true },
-  cuisine: { type: String, required: true },
-  creatorId: { type: String, required: true },
-});
+  {
+    timestamps: true,
+  }
+);
 
 // Custom build function
 recipeSchema.statics.build = function (recipeAttrs: Partial<Recipe>) {
