@@ -14,10 +14,13 @@ export class ServiceController {
 
   getHealth = async (req: Request, res: Response) => {
     try {
-      const projectRoot = path.resolve(__dirname, '..');
+      const projectRoot = path.resolve(__dirname, '../../');
       console.log(projectRoot);
-      const buildInfo = JSON.parse(fs.readFileSync('build-info.json', 'utf8'));
-      return res.status(200).json(buildInfo);
+      const buildInfo = fs.readFileSync(
+        path.resolve(projectRoot, 'build-info.json'),
+        'utf8'
+      );
+      return res.status(200).json(JSON.parse(buildInfo));
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
       return res.status(500).json({ message: 'Error retrieving health' });
