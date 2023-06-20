@@ -14,7 +14,7 @@ import {
 import axios from 'axios';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
-import { JwtPayload, decode } from 'jsonwebtoken';
+import jwt, { JwtPayload, decode } from 'jsonwebtoken';
 
 import { poolData, userPool } from '../auth/awsCognito';
 import logger from '../logger/winston';
@@ -655,6 +655,13 @@ export class AuthController {
       if (!sessionToken || !userName || !cookieToken) {
         return res.status(200).json({ isAuthenticated: false });
       }
+      const decoded = jwt.decode(sessionToken);
+
+      if (typeof decoded !== 'object' || decoded === null) {
+        return res.status(200).json({ isAuthenticated: false });
+      }
+
+      const isExpired = this.isExpired(sessionToken);
 
       const params = {
         UserPoolId: poolData.UserPoolId,
@@ -666,11 +673,29 @@ export class AuthController {
       if (!user.Enabled) {
         return res.status(200).json({ isAuthenticated: false });
       } else {
-        return res.status(200).json({ isAuthenticated: true });
+        return res.status(200).json({ isAuthenticated: !isExpired });
       }
     } catch (error) {
       this.logger.error('Error getting tokens:', error);
       return res.status(500).json({ isAuthenticated: false });
+    }
+  };
+
+  isExpired = (token: string): boolean => {
+    try {
+      const decodedToken = jwt.decode(token); // Decode the token
+
+      if (typeof decodedToken !== 'object' || decodedToken === null) {
+        return true;
+      }
+      const dateNow = new Date();
+      // Convert expiration time from seconds to milliseconds
+      const tokenExpirationDate = new Date((decodedToken.exp || 0) * 1000);
+
+      return tokenExpirationDate < dateNow;
+    } catch (err) {
+      // If token can't be decoded, consider it as expired
+      return true;
     }
   };
 }
