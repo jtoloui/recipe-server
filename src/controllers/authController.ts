@@ -69,6 +69,10 @@ type loginSocialQuery = {
   type: 'Google';
 };
 
+type resendVerificationCodeBody = {
+  username: string;
+};
+
 const winstonLogger = logger('info', 'Auth Controller');
 
 const client = new CognitoIdentityServiceProvider({
@@ -456,24 +460,14 @@ export class AuthController {
     );
 
     try {
-      userPool.signUp(
-        username,
-        password,
-        userAttributes,
-        [],
-        async (err, result) => {
-          if (err) {
-            this.logger.error('Error signing up:', err);
-            return res.status(409).json({ message: 'Error signing up', err });
-          } else {
-            await this.client.adminConfirmSignUp({
-              UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
-              Username: result?.user.getUsername() || '',
-            });
-            res.status(200).json({ message: 'User created successfully' });
-          }
+      userPool.signUp(username, password, userAttributes, [], async (err) => {
+        if (err) {
+          this.logger.error('Error signing up:', err);
+          return res.status(409).json({ message: 'Error signing up', err });
+        } else {
+          res.status(200).json({ message: 'User created successfully' });
         }
-      );
+      });
     } catch (error) {
       console.log('here');
 
@@ -498,11 +492,31 @@ export class AuthController {
     cognitoUser.confirmRegistration(code, true, (err, result) => {
       if (err) {
         console.error(err);
-        return res.status(400).send(err.message);
+        return res.status(400).json({ error: err.message });
       } else {
-        return res.status(200).send('User verification successful');
+        return res
+          .status(200)
+          .json({ message: 'User verification successful' });
       }
     });
+  };
+
+  resendVerificationCode = async (
+    req: Request<unknown, unknown, resendVerificationCodeBody>,
+    res: Response
+  ) => {
+    try {
+      const { username } = req.body;
+      await this.client.resendConfirmationCode({
+        ClientId: poolData.ClientId || '',
+        Username: username,
+      });
+
+      return res.status(200).json({ message: 'Code resent successfully' });
+    } catch (error) {
+      this.logger.error('Error resending code:', error);
+      return res.status(400).json({ message: 'Error resending code' });
+    }
   };
 
   forgotPassword = async (

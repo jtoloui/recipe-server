@@ -13,6 +13,7 @@ router.get('/login-social', authController.loginSocial);
 router.get('/logout', authController.logout);
 router.post('/register', authController.signUp);
 router.post('/verify/email', authController.verifyEmail);
+router.post('/resend/verification-code', authController.resendVerificationCode);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/forgot-password/confirm', authController.forgotPasswordConfirm);
 router.get('/callback', authController.callBack);
