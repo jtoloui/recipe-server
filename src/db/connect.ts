@@ -49,13 +49,6 @@ class DBConnection {
           this.winstonLogger.info('MongoDB session store connected');
         }
       });
-
-      this.store.once('connection', () => {
-        console.log('jhel');
-      });
-      this.store.on('connecting', () => {
-        console.log('jhel');
-      });
     }
     return this; // Enable method chaining
   }
