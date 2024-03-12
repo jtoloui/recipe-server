@@ -77,6 +77,7 @@ export class newConfig {
     const result = ConfigSchema.safeParse(this.config);
 
     if (!result.success) {
+      this.log.info(result.error);
       this.log.error('Config validation failed');
       process.exit(1);
     }
