@@ -23,7 +23,7 @@
     "amazon-cognito-identity-js": "^6.2.0",
     "axios": "^1.4.0",
     "body-parser": "^1.20.2",
-    "connect-mongodb-session": "^3.1.1",
+    "connect-mongodb-session": "5.0.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.1.1",
-    "@types/connect-mongodb-session": "^2.4.4",
+    "@types/connect-mongodb-session": "^2.4.7",
     "@types/cookie-parser": "^1.4.3",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
@@ -52,7 +52,7 @@
     "@types/uuid": "^9.0.1",
     "concurrently": "^8.0.1",
     "git-rev-sync": "^3.0.2",
-    "nodemon": "^2.0.22",
+    "nodemon": "^3.1.0",
     "typescript": "^5.1.3"
   }
 }
