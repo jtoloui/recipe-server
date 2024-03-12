@@ -11,6 +11,7 @@
     "build": "TZ=UTC tsc",
     "start": "TZ=UTC node dist/index.js",
     "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\"",
+    "dev:bun": "bun --hot run index.ts",
     "prettier": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\" index.ts"
   },
   "keywords": [],
@@ -37,7 +38,7 @@
     "mongoose": "^7.1.1",
     "uuid": "^9.0.0",
     "winston": "^3.8.2",
-    "zod": "^3.21.4"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.1.1",
