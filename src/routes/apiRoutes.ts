@@ -4,38 +4,44 @@ import { ProfileController } from '../controllers/profileController';
 import { RecipeController } from '../controllers/recipeController';
 import { ServiceController } from '../controllers/serviceController';
 import { isAuthenticated } from '../middleware/authenticated';
+import { ConfigType } from '../config/config';
 
-const router = Router();
+export const apiRoutes = (config: ConfigType) => {
+  const router = Router();
 
-const profileController = new ProfileController();
-const recipeController = new RecipeController();
-const serviceController = new ServiceController();
+  // Pass the config or specific config properties to your controllers as needed
+  const profileController = new ProfileController({
+    logger: config.newLogger('info', 'ProfileController'),
+  });
+  const recipeController = new RecipeController(); // Assuming RecipeController is adjusted to accept config
+  const serviceController = new ServiceController(); // Assuming ServiceController is adjusted to accept config
 
-router.get('/health', serviceController.getHealth);
+  router.get('/health', serviceController.getHealth);
 
-router.get('/profile', isAuthenticated, profileController.getProfile);
+  router.get('/profile', isAuthenticated, profileController.getProfile);
 
-router.get('/recipes', isAuthenticated, recipeController.getAllRecipes);
-router.get('/recipes/:id', isAuthenticated, recipeController.getRecipeById);
-router.post('/recipes', isAuthenticated, recipeController.createRecipe);
+  router.get('/recipes', isAuthenticated, recipeController.getAllRecipes);
+  router.get('/recipes/:id', isAuthenticated, recipeController.getRecipeById);
+  router.post('/recipes', isAuthenticated, recipeController.createRecipe);
 
-router.get(
-  '/popular/measurements',
-  isAuthenticated,
-  recipeController.measurementsType
-);
+  router.get(
+    '/popular/measurements',
+    isAuthenticated,
+    recipeController.measurementsType,
+  );
 
-router.get(
-  '/popular/labels',
-  isAuthenticated,
-  recipeController.getPopularLabels
-);
+  router.get(
+    '/popular/labels',
+    isAuthenticated,
+    recipeController.getPopularLabels,
+  );
 
-router.get('/labels', isAuthenticated, recipeController.getRecipesLabels);
-router.get(
-  '/labels/:label',
-  isAuthenticated,
-  recipeController.getRecipesByLabel
-);
+  router.get('/labels', isAuthenticated, recipeController.getRecipesLabels);
+  router.get(
+    '/labels/:label',
+    isAuthenticated,
+    recipeController.getRecipesByLabel,
+  );
 
-export default router;
+  return router; // Return the configured router
+};

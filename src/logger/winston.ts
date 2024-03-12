@@ -1,7 +1,15 @@
 import winston from 'winston';
+import { z } from 'zod';
+
+export const newLoggerSchema = z
+  .function()
+  .args(z.string(), z.string())
+  .returns(z.instanceof(winston.Logger));
+
+export type newLoggerType = z.infer<typeof newLoggerSchema>;
 
 // Create a Winston logger instance
-const logger = (logLvl: string, label: string = 'Route') =>
+export const logger: newLoggerType = (logLvl, label) =>
   winston.createLogger({
     level: logLvl,
     format: winston.format.combine(
@@ -10,7 +18,7 @@ const logger = (logLvl: string, label: string = 'Route') =>
       winston.format.label({ label }),
       winston.format.printf(({ timestamp, level, message, label }) => {
         return `${timestamp} [Recipe Api - ${label}] ${level}: ${message}`;
-      })
+      }),
     ),
     transports: [new winston.transports.Console()],
   });

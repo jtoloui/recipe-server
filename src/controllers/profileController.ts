@@ -1,31 +1,38 @@
 import { Request, Response } from 'express';
 
-import logger from '../logger/winston';
+import { getProfileResponse } from '../types/profile/controller';
+import { controllerConfig } from '../config/config';
+import { Logger } from 'winston';
 
-export class ProfileController {
-  private logger: ReturnType<typeof logger>;
+interface Profile {
+  getProfile: (
+    req: Request,
+    res: Response,
+  ) => Promise<Response<getProfileResponse>>;
+}
 
-  constructor() {
-    const logLevel = process.env.LOG_LEVEL || 'info';
-    this.logger = logger(logLevel, 'RecipeController');
+export class ProfileController implements Profile {
+  private logger: Logger;
+
+  constructor(config: controllerConfig) {
+    this.logger = config.logger;
   }
 
-  // TODO: Implement this
-  getProfile = async (req: Request, res: Response) => {
+  getProfile = async (req: Request, res: Response<getProfileResponse>) => {
     try {
-      const profile = req.session?.user;
+      const profile = req.session.user;
       if (!profile) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
 
       return res.status(200).json({
-        name: profile?.name,
+        name: profile.name,
         email: profile.email,
-        id: profile?.sub,
-        nickname: profile?.name,
-        givenName: profile?.givenName,
-        familyName: profile?.familyName,
-        userName: profile?.username,
+        id: profile.sub,
+        nickname: profile.name,
+        givenName: profile.givenName,
+        familyName: profile.familyName,
+        userName: profile.username,
       });
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
