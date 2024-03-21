@@ -1,7 +1,7 @@
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import express, { Express } from 'express';
+import express, { Express, NextFunction, Request, Response } from 'express';
 import session from 'express-session';
 import expressWinston from 'express-winston';
 import fs from 'fs';
@@ -68,7 +68,7 @@ app.use(
   }),
 );
 
-// Middleware to log HTTP requests
+// Middleware to log HTTP Outbound requests
 app.use(
   expressWinston.logger({
     winstonInstance: winstonLoggerMiddleware,
@@ -85,12 +85,20 @@ app.use(
     msg: (req, res) =>
       `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${
         req.id
-      } - HTTP ${req.method} ${req.url} - Status: ${res.statusCode} - ${
+      } - HTTP (Outbound) ${req.method} ${req.url} - Status: ${res.statusCode} - ${
         res.statusMessage
       }`,
   }),
 );
+// Middleware to log HTTP Inbound requests
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const logger = config.newLogger(logLevel, 'Routes');
 
+  logger.info(
+    `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - HTTP (Inbound) ${req.method} ${req.url}`,
+  );
+  next();
+});
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api', apiRoutes(config));

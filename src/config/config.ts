@@ -1,8 +1,8 @@
 import winston from 'winston';
-import { z, infer } from 'zod';
+import { z } from 'zod';
 import dotenv from 'dotenv';
 
-import logger, { newLoggerSchema, newLoggerType } from '../logger/winston';
+import { newLoggerSchema, newLoggerType } from '../logger/winston';
 dotenv.config();
 
 export interface controllerConfig {
@@ -72,8 +72,8 @@ export class newConfig {
     const result = ConfigSchema.safeParse(this.config);
 
     if (!result.success) {
-      this.log.debug(result.error);
       this.log.error('Config validation failed');
+      this.log.debug(`validating config failed:`, result.error);
       process.exit(1);
     }
 

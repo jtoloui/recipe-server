@@ -33,7 +33,7 @@ export class RecipeController implements Recipe {
   getAllRecipes = async (req: Request, res: Response) => {
     try {
       const recipes = await RecipeModel.find({});
-      this.logger.info(`Request ID: ${req.id} - ${recipes}`);
+      this.logger.debug(`Request ID: ${req.id} - ${recipes}`);
       return res.status(200).json(recipes);
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
@@ -65,6 +65,9 @@ export class RecipeController implements Recipe {
       const recipe = await RecipeModel.findById(req.params.id, findReturnItems);
       if (recipe) {
         const isAuthor = recipe.creatorId === req.session?.user?.sub;
+        this.logger.debug(
+          `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Recipe ID: ${req.params.id} `,
+        );
         return res.status(200).json({ ...recipe.toObject(), isAuthor });
       } else {
         return res.status(404).json({ message: 'Recipe not found' });
@@ -77,6 +80,10 @@ export class RecipeController implements Recipe {
 
   createRecipe = async (req: Request, res: Response) => {
     try {
+      this.logger.debug(
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Create Recipe`,
+        req.body,
+      );
       const validatedReqData = await createRecipeSchema.parseAsync(req.body);
       const newRecipeData = convertRecipeZodToMongo(validatedReqData);
       const { labels } = newRecipeData;
@@ -131,7 +138,7 @@ export class RecipeController implements Recipe {
         ingredients: 1,
         timeToCook: 1,
       };
-      this.logger.info(
+      this.logger.debug(
         `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - ${label}`,
       );
 
