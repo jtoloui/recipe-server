@@ -17,7 +17,9 @@ import authRoutes from './src/routes/authRoutes';
 import { corsOptions } from './src/utils/cors';
 import { newConfig } from './src/config/config';
 
-const config = new newConfig(logger).validate().getConfig();
+const config = new newConfig(logger, process.env.LOG_LEVEL)
+  .validate()
+  .getConfig();
 
 const dbConnection = new DBConnection(config);
 dbConnection.connectDB();

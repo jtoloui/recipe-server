@@ -1,25 +1,39 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 
-import logger from '../logger/winston';
 import RecipeModel, { RecipeAttributes } from '../models/recipe';
 import { getMeasurementsType, groupRecipesByLabel } from '../queries';
 import { convertRecipeZodToMongo, createRecipeSchema } from '../schemas';
+import { controllerConfig } from '../config/config';
+import { Logger } from 'winston';
 
 type getRecipesByLabelParams = {
   label: string;
 };
-export class RecipeController {
-  private logger: ReturnType<typeof logger>;
 
-  constructor() {
-    const logLevel = process.env.LOG_LEVEL || 'info';
-    this.logger = logger(logLevel, 'RecipeController');
+interface Recipe {
+  getAllRecipes: (req: Request, res: Response) => Promise<Response>;
+  getRecipeById: (req: Request, res: Response) => Promise<Response>;
+  createRecipe: (req: Request, res: Response) => Promise<Response>;
+  getRecipesLabels: (req: Request, res: Response) => Promise<Response>;
+  getRecipesByLabel: (
+    req: Request<getRecipesByLabelParams>,
+    res: Response,
+  ) => Promise<Response>;
+  measurementsType: (req: Request, res: Response) => Promise<Response>;
+  getPopularLabels: (req: Request, res: Response) => Promise<Response>;
+}
+export class RecipeController implements Recipe {
+  private logger: Logger;
+
+  constructor(config: controllerConfig) {
+    this.logger = config.logger;
   }
 
   getAllRecipes = async (req: Request, res: Response) => {
     try {
       const recipes = await RecipeModel.find({});
+      this.logger.info(`Request ID: ${req.id} - ${recipes}`);
       return res.status(200).json(recipes);
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
@@ -67,7 +81,7 @@ export class RecipeController {
       const newRecipeData = convertRecipeZodToMongo(validatedReqData);
       const { labels } = newRecipeData;
       const capitalizedLabels = labels.map(
-        (label) => label.charAt(0).toUpperCase() + label.slice(1)
+        (label) => label.charAt(0).toUpperCase() + label.slice(1),
       );
 
       const newRecipe = await RecipeModel.create({
@@ -103,7 +117,7 @@ export class RecipeController {
 
   getRecipesByLabel = async (
     req: Request<getRecipesByLabelParams>,
-    res: Response
+    res: Response,
   ) => {
     try {
       const { label } = req.params;
@@ -117,7 +131,9 @@ export class RecipeController {
         ingredients: 1,
         timeToCook: 1,
       };
-      this.logger.info(`Request ID: ${req.id} - ${label}`);
+      this.logger.info(
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - ${label}`,
+      );
 
       if (label.toLocaleLowerCase() === 'all') {
         const recipes = await RecipeModel.find({}, findReturnItems);
@@ -134,7 +150,7 @@ export class RecipeController {
       }
       const recipes = await RecipeModel.find(
         { labels: { $regex: new RegExp(`^${label}$`, 'i') } },
-        findReturnItems
+        findReturnItems,
       );
       const recipesWithTotalTime = recipes.map((recipe) => {
         const totalHours = recipe.timeToCook.totalHours || 0;

@@ -11,10 +11,14 @@ export const apiRoutes = (config: ConfigType) => {
 
   // Pass the config or specific config properties to your controllers as needed
   const profileController = new ProfileController({
-    logger: config.newLogger('info', 'ProfileController'),
+    logger: config.newLogger(config.logLevel, 'ProfileController'),
   });
-  const recipeController = new RecipeController(); // Assuming RecipeController is adjusted to accept config
-  const serviceController = new ServiceController(); // Assuming ServiceController is adjusted to accept config
+  const recipeController = new RecipeController({
+    logger: config.newLogger(config.logLevel, 'RecipeController'),
+  }); // Assuming RecipeController is adjusted to accept config
+  const serviceController = new ServiceController({
+    logger: config.newLogger(config.logLevel, 'ServiceController'),
+  }); // Assuming ServiceController is adjusted to accept config
 
   router.get('/health', serviceController.getHealth);
 

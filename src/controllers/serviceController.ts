@@ -2,23 +2,26 @@ import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 
-import logger from '../logger/winston';
+import { controllerConfig } from '../config/config';
+import { Logger } from 'winston';
 
-export class ServiceController {
-  private logger: ReturnType<typeof logger>;
+interface Service {
+  getHealth: (req: Request, res: Response) => Promise<Response>;
+}
 
-  constructor() {
-    const logLevel = process.env.LOG_LEVEL || 'info';
-    this.logger = logger(logLevel, 'ServiceController');
+export class ServiceController implements Service {
+  private logger: Logger;
+
+  constructor(config: controllerConfig) {
+    this.logger = config.logger;
   }
 
   getHealth = async (req: Request, res: Response) => {
     try {
       const projectRoot = path.resolve(__dirname, '../../');
-      console.log(projectRoot);
       const buildInfo = fs.readFileSync(
         path.resolve(projectRoot, 'build-info.json'),
-        'utf8'
+        'utf8',
       );
       return res.status(200).json(JSON.parse(buildInfo));
     } catch (error) {

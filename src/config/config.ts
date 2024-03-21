@@ -38,13 +38,12 @@ export class newConfig {
   private config: ConfigType;
   private log: winston.Logger;
 
-  constructor(logger: newLoggerType) {
-    this.log = logger('info', 'Config');
+  constructor(logger: newLoggerType, cfgLogLvl: string = 'info') {
+    this.log = logger(cfgLogLvl, 'Config');
     this.config = this.loadConfig(logger);
   }
 
   loadConfig(logger: newLoggerType): ConfigType {
-    this.log.info('Loading config');
     return {
       port: process.env.PORT || '3001',
       logLevel: process.env.LOG_LEVEL as z.infer<
@@ -73,7 +72,7 @@ export class newConfig {
     const result = ConfigSchema.safeParse(this.config);
 
     if (!result.success) {
-      this.log.info(result.error);
+      this.log.debug(result.error);
       this.log.error('Config validation failed');
       process.exit(1);
     }
