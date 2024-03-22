@@ -8,13 +8,13 @@ import fs from 'fs';
 import helmet from 'helmet';
 import https from 'https';
 
+import { newConfig } from './src/config/config';
 import { DBConnection } from './src/db';
 import logger from './src/logger/winston';
 import assignId from './src/middleware/requestId';
 // routes
 import { apiRoutes } from './src/routes/apiRoutes';
 import { corsOptions } from './src/utils/cors';
-import { newConfig } from './src/config/config';
 
 const config = new newConfig(logger, process.env.LOG_LEVEL)
   .validate()
@@ -64,7 +64,7 @@ app.use(
     store: store,
     resave: false,
     saveUninitialized: false,
-  }),
+  })
 );
 
 // Middleware to log HTTP Outbound requests
@@ -84,17 +84,19 @@ app.use(
     msg: (req, res) =>
       `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${
         req.id
-      } - HTTP (Outbound) ${req.method} ${req.url} - Status: ${res.statusCode} - ${
-        res.statusMessage
-      }`,
-  }),
+      } - HTTP (Outbound) ${req.method} ${req.url} - Status: ${
+        res.statusCode
+      } - ${res.statusMessage}`,
+  })
 );
 // Middleware to log HTTP Inbound requests
 app.use((req: Request, res: Response, next: NextFunction) => {
   const logger = config.newLogger(logLevel, 'Routes');
 
   logger.info(
-    `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - HTTP (Inbound) ${req.method} ${req.url}`,
+    `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${
+      req.id
+    } - HTTP (Inbound) ${req.method} ${req.url}`
   );
   next();
 });
@@ -107,13 +109,13 @@ if (process.env.NODE_ENV !== 'production') {
 
   https.createServer({ key, cert }, app).listen(port, () => {
     serverLogger.info(
-      `⚡️[server]: Server is running at https://localhost:${port}`,
+      `⚡️[server]: Server is running at https://localhost:${port}`
     );
   });
 } else {
   app.listen(port, () => {
     serverLogger.info(
-      `⚡️[server]: Server is running at http://localhost:${port}`,
+      `⚡️[server]: Server is running at http://localhost:${port}`
     );
   });
 }

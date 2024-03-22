@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
-
-import { getProfileResponse } from '../types/profile/controller';
-import { controllerConfig } from '../config/config';
 import { Logger } from 'winston';
+
+import { controllerConfig } from '../config/config';
+import { getProfileResponse } from '../types/profile/controller';
 
 interface Profile {
   getProfile: (
     req: Request,
-    res: Response,
+    res: Response
   ) => Promise<Response<getProfileResponse>>;
 }
 

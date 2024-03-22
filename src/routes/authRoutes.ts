@@ -1,8 +1,8 @@
 import express from 'express';
 
+import { ConfigType } from '../config/config';
 import { AuthController } from '../controllers/authController';
 import { isAdmin } from '../middleware/authenticated';
-import { ConfigType } from '../config/config';
 
 export const authRoutes = (config: ConfigType) => {
   const router = express.Router();
@@ -22,7 +22,7 @@ export const authRoutes = (config: ConfigType) => {
   router.post('/verify/email', authController.verifyEmail);
   router.post(
     '/resend/verification-code',
-    authController.resendVerificationCode,
+    authController.resendVerificationCode
   );
   router.post('/forgot-password', authController.forgotPassword);
   router.post('/forgot-password/confirm', authController.forgotPasswordConfirm);

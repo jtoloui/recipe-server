@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
+import { Logger } from 'winston';
 
+import { controllerConfig } from '../config/config';
 import RecipeModel from '../models/recipe';
 import { getMeasurementsType } from '../queries';
-import { controllerConfig } from '../config/config';
-import { Logger } from 'winston';
 
 interface Measurements {
   getPopularMeasurements: (req: Request, res: Response) => Promise<Response>;

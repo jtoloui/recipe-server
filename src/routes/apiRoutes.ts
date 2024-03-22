@@ -1,12 +1,12 @@
 import { Router } from 'express';
 
 import { ConfigType } from '../config/config';
-import { recipeRoutes } from './recipeRoutes';
+import { authRoutes } from './authRoutes';
+import { healthRoutes } from './healthRoutes';
 import { labelRoutes } from './labelRoutes';
 import { measurementsRoutes } from './measurementsRoutes';
 import { profileRoutes } from './profileRoutes';
-import { healthRoutes } from './healthRoutes';
-import { authRoutes } from './authRoutes';
+import { recipeRoutes } from './recipeRoutes';
 
 export const apiRoutes = (config: ConfigType) => {
   const router = Router();

@@ -1,13 +1,20 @@
+import dotenv from 'dotenv';
 import winston from 'winston';
 import { z } from 'zod';
-import dotenv from 'dotenv';
 
 import { newLoggerSchema, newLoggerType } from '../logger/winston';
+
 dotenv.config();
 
 export interface controllerConfig {
   logger: winston.Logger;
 }
+export interface controllerConfigWithStore extends controllerConfig {
+  newLogger: (logLevel: string, label: string) => winston.Logger;
+  logLevel: ConfigType['logLevel'];
+}
+
+export interface storeConfig extends controllerConfig {}
 
 interface awsConfig {
   cognitoRegion: string;

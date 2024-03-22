@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
+import { Logger } from 'winston';
 
+import { controllerConfig } from '../config/config';
 import RecipeModel, { RecipeAttributes } from '../models/recipe';
 import { groupRecipesByLabel } from '../queries';
-import { controllerConfig } from '../config/config';
-import { Logger } from 'winston';
 
 type getRecipesByLabelParams = {
   label: string;
@@ -13,7 +13,7 @@ interface Label {
   getLabels: (req: Request, res: Response) => Promise<Response>;
   getByLabel: (
     req: Request<getRecipesByLabelParams>,
-    res: Response,
+    res: Response
   ) => Promise<Response>;
   getPopularLabels: (req: Request, res: Response) => Promise<Response>;
 }
@@ -50,7 +50,7 @@ export class LabelController implements Label {
         timeToCook: 1,
       };
       this.logger.debug(
-        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - ${label}`,
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - ${label}`
       );
 
       if (label.toLocaleLowerCase() === 'all') {
@@ -68,7 +68,7 @@ export class LabelController implements Label {
       }
       const recipes = await RecipeModel.find(
         { labels: { $regex: new RegExp(`^${label}$`, 'i') } },
-        findReturnItems,
+        findReturnItems
       );
       const recipesWithTotalTime = recipes.map((recipe) => {
         const totalHours = recipe.timeToCook.totalHours || 0;

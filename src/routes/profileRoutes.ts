@@ -1,7 +1,8 @@
 import { Router } from 'express';
+
+import { ConfigType } from '../config/config';
 import { ProfileController } from '../controllers/profileController';
 import { isAuthenticated } from '../middleware/authenticated';
-import { ConfigType } from '../config/config';
 
 export const profileRoutes = (config: ConfigType) => {
   const router = Router();

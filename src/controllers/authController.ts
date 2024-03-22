@@ -15,11 +15,11 @@ import axios from 'axios';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import { Logger } from 'winston';
 
 import { poolData, userPool } from '../auth/awsCognito';
-import logger from '../logger/winston';
-import { Logger } from 'winston';
 import { authControllerConfig } from '../config/config';
+import logger from '../logger/winston';
 
 type deleteUserBody = {
   id: string;
@@ -108,19 +108,19 @@ interface Auth {
   signUp: (req: Request<unknown, unknown, signUpBody>, res: Response) => void;
   verifyEmail: (
     req: Request<unknown, unknown, verifyBody>,
-    res: Response,
+    res: Response
   ) => void;
   resendVerificationCode: (
     req: Request<unknown, unknown, resendVerificationCodeBody>,
-    res: Response,
+    res: Response
   ) => void;
   forgotPassword: (
     req: Request<null, null, forgotPasswordBody>,
-    res: Response,
+    res: Response
   ) => void;
   forgotPasswordConfirm: (
     req: Request<null, null, forgotPasswordConfirmBody>,
-    res: Response,
+    res: Response
   ) => void;
   callBack: (req: Request<callBackParams>, res: Response) => void;
   isAuthenticated: (req: Request, res: Response) => void;
@@ -143,7 +143,7 @@ export class AuthController implements Auth {
 
   deleteUser = async (
     req: Request<unknown, unknown, deleteUserBody>,
-    res: Response,
+    res: Response
   ) => {
     // try {
     //   const { id } = req.body;
@@ -185,7 +185,7 @@ export class AuthController implements Auth {
               [attributeName]: attributeValue,
             };
           },
-          {},
+          {}
         );
 
         return {
@@ -427,7 +427,7 @@ export class AuthController implements Auth {
         IdToken: new CognitoIdToken({ IdToken }),
         AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
         RefreshToken: new CognitoRefreshToken({ RefreshToken }),
-      }),
+      })
     );
 
     cognitoUser.globalSignOut({
@@ -450,39 +450,39 @@ export class AuthController implements Auth {
 
   signUp = async (
     req: Request<unknown, unknown, signUpBody>,
-    res: Response,
+    res: Response
   ) => {
     const { username, password, email, given_name, family_name } = req.body;
 
     const userAttributes = [];
     userAttributes.push(
-      new CognitoUserAttribute({ Name: 'email', Value: email }),
+      new CognitoUserAttribute({ Name: 'email', Value: email })
     );
     userAttributes.push(
-      new CognitoUserAttribute({ Name: 'given_name', Value: given_name }),
+      new CognitoUserAttribute({ Name: 'given_name', Value: given_name })
     );
     userAttributes.push(
-      new CognitoUserAttribute({ Name: 'family_name', Value: family_name }),
+      new CognitoUserAttribute({ Name: 'family_name', Value: family_name })
     );
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'updated_at',
         Value: new Date().getTime().toString(),
-      }),
+      })
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'name',
         Value: `${given_name} ${family_name}`,
-      }),
+      })
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'zoneinfo',
         Value: 'Europe/London',
-      }),
+      })
     );
 
     try {
@@ -504,7 +504,7 @@ export class AuthController implements Auth {
 
   verifyEmail = async (
     req: Request<unknown, unknown, verifyBody>,
-    res: Response,
+    res: Response
   ) => {
     const { username, code } = req.body;
 
@@ -529,7 +529,7 @@ export class AuthController implements Auth {
 
   resendVerificationCode = async (
     req: Request<unknown, unknown, resendVerificationCodeBody>,
-    res: Response,
+    res: Response
   ) => {
     try {
       const { username } = req.body;
@@ -547,7 +547,7 @@ export class AuthController implements Auth {
 
   forgotPassword = async (
     req: Request<null, null, forgotPasswordBody>,
-    res: Response,
+    res: Response
   ) => {
     const { username } = req.body;
 
@@ -576,7 +576,7 @@ export class AuthController implements Auth {
 
   forgotPasswordConfirm = async (
     req: Request<null, null, forgotPasswordConfirmBody>,
-    res: Response,
+    res: Response
   ) => {
     const { username, code, password } = req.body;
 
@@ -636,7 +636,7 @@ export class AuthController implements Auth {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-        },
+        }
       );
 
       const { id_token, access_token, refresh_token } = response.data;

@@ -18,7 +18,7 @@ export const logger: newLoggerType = (logLvl, label) =>
       winston.format.label({ label }),
       winston.format.printf(({ timestamp, level, message, label }) => {
         return `${timestamp} [${label}] ${level}: ${message}`;
-      }),
+      })
     ),
     transports: [new winston.transports.Console()],
   });

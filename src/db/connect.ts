@@ -1,9 +1,9 @@
+import MongoStore from 'connect-mongo';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import MongoStore from 'connect-mongo';
 
-import logger from '../logger/winston';
 import { ConfigType } from '../config/config';
+import logger from '../logger/winston';
 
 dotenv.config();
 
@@ -56,7 +56,7 @@ class DBConnection {
   getSessionStore(): MongoStore {
     if (!this.store) {
       throw new Error(
-        'Session store is not initialized. Call connectSessionStore() first.',
+        'Session store is not initialized. Call connectSessionStore() first.'
       );
     }
     return this.store;

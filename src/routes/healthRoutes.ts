@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { ServiceController } from '../controllers/serviceController';
 
 import { ConfigType } from '../config/config';
+import { ServiceController } from '../controllers/serviceController';
 
 export const healthRoutes = (config: ConfigType) => {
   const router = Router();

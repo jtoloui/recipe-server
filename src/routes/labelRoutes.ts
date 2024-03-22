@@ -1,7 +1,8 @@
 import { Router } from 'express';
+
+import { ConfigType } from '../config/config';
 import { LabelController } from '../controllers/labelController';
 import { isAuthenticated } from '../middleware/authenticated';
-import { ConfigType } from '../config/config';
 
 export const labelRoutes = (config: ConfigType) => {
   const router = Router();
