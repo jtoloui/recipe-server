@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { Logger } from 'winston';
 
-import { controllerConfig } from '../config/config';
 import RecipeModel, { RecipeAttributes } from '../models/recipe';
 import { groupRecipesByLabel } from '../queries';
+import { controllerConfig } from '../types/controller/controller';
+import ResponseHandler from '../utils/responseHandler';
 
 type getRecipesByLabelParams = {
   label: string;
@@ -13,26 +14,29 @@ interface Label {
   getLabels: (req: Request, res: Response) => Promise<Response>;
   getByLabel: (
     req: Request<getRecipesByLabelParams>,
-    res: Response
+    res: Response,
   ) => Promise<Response>;
   getPopularLabels: (req: Request, res: Response) => Promise<Response>;
 }
 
 export class LabelController implements Label {
   private logger: Logger;
+  private response: ResponseHandler;
 
   constructor(config: controllerConfig) {
     this.logger = config.logger;
+    this.response = new ResponseHandler({ logger: this.logger });
   }
 
   getLabels = async (req: Request, res: Response) => {
     try {
       const labels = await RecipeModel.aggregate(groupRecipesByLabel);
+      const labelsResponse = { ...labels[0] };
 
-      return res.status(200).json({ ...labels[0] });
+      return this.response.sendSuccess(res, labelsResponse);
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
-      return res.status(500).json({ message: 'Error retrieving labels' });
+      return this.response.sendError(res, 500, 'Error retrieving labels');
     }
   };
 
@@ -50,7 +54,7 @@ export class LabelController implements Label {
         timeToCook: 1,
       };
       this.logger.debug(
-        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - ${label}`
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - ${label}`,
       );
 
       if (label.toLocaleLowerCase() === 'all') {
@@ -64,11 +68,12 @@ export class LabelController implements Label {
               : `${parseFloat(totalMinutes.toFixed(2))} mins`;
           return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
         });
-        return res.status(200).json(recipesWithTotalTime);
+
+        return this.response.sendSuccess(res, recipesWithTotalTime);
       }
       const recipes = await RecipeModel.find(
         { labels: { $regex: new RegExp(`^${label}$`, 'i') } },
-        findReturnItems
+        findReturnItems,
       );
       const recipesWithTotalTime = recipes.map((recipe) => {
         const totalHours = recipe.timeToCook.totalHours || 0;
@@ -79,10 +84,11 @@ export class LabelController implements Label {
             : `${parseFloat(totalMinutes.toFixed(2))} mins`;
         return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
       });
-      return res.status(200).json(recipesWithTotalTime);
+
+      return this.response.sendSuccess(res, recipesWithTotalTime);
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
-      return res.status(500).json({ message: 'Error retrieving recipes' });
+      return this.response.sendError(res, 500, 'Error retrieving recipes');
     }
   };
 
@@ -127,10 +133,16 @@ export class LabelController implements Label {
           },
         },
       ]);
-      return res.status(200).json({ ...popularLabels[0] });
+
+      return this.response.sendSuccess(res, { ...popularLabels[0] });
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
-      return res.status(500).json({ message: 'Error retrieving labels' });
+
+      return this.response.sendError(
+        res,
+        500,
+        'Error retrieving popular labels',
+      );
     }
   };
 }

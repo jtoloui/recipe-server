@@ -2,52 +2,11 @@ import dotenv from 'dotenv';
 import winston from 'winston';
 import { z } from 'zod';
 
-import { newLoggerSchema, newLoggerType } from '../logger/winston';
+import { newLoggerType } from '../logger/winston';
+import { ConfigSchema } from '../schemas/config';
+import { ConfigType } from '../types/config/config';
 
 dotenv.config();
-
-export interface controllerConfig {
-  logger: winston.Logger;
-}
-export interface controllerConfigWithStore extends controllerConfig {
-  newLogger: (logLevel: string, label: string) => winston.Logger;
-  logLevel: ConfigType['logLevel'];
-}
-
-export interface storeConfig extends controllerConfig {}
-
-interface awsConfig {
-  cognitoRegion: string;
-  accessKeyId: string;
-  secretAccessKey: string;
-}
-
-export interface authControllerConfig extends controllerConfig, awsConfig {}
-
-const ConfigSchema = z.object({
-  port: z.string(),
-  logLevel: z
-    .enum(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly'])
-    .default('info'),
-  mongoUri: z.string().min(1),
-  sessionDBName: z.string().min(1),
-  sessionCollection: z.string().min(1),
-  awsRegion: z.string().min(1),
-  awsCognitoUserPoolId: z.string().min(1),
-  awsCognitoClientId: z.string().min(1),
-  awsCognitoDomain: z.string().min(1),
-  awsAccessKeyId: z.string().min(1),
-  awsSecretAccessKey: z.string().min(1),
-  cookieDomain: z.string().min(1),
-  TZ: z.string(),
-  log: z.instanceof(winston.Logger),
-  newLogger: newLoggerSchema,
-  webAppUri: z.string().url(),
-  apiAppUri: z.string().url(),
-  sessionSecret: z.string().min(1),
-});
-
-export type ConfigType = z.infer<typeof ConfigSchema>;
 
 export class newConfig {
   private config: ConfigType;

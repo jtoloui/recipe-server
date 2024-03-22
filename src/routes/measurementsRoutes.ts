@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { ConfigType } from '../config/config';
 import { MeasurementsController } from '../controllers/measurementsController';
 import { isAuthenticated } from '../middleware/authenticated';
+import { ConfigType } from '../types/config/config';
 
 export const measurementsRoutes = (config: ConfigType) => {
   const router = Router();

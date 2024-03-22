@@ -18,8 +18,8 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import { Logger } from 'winston';
 
 import { poolData, userPool } from '../auth/awsCognito';
-import { authControllerConfig } from '../config/config';
-import logger from '../logger/winston';
+import { authControllerConfig } from '../types/controller/controller';
+import ResponseHandler from '../utils/responseHandler';
 
 type deleteUserBody = {
   id: string;
@@ -108,19 +108,19 @@ interface Auth {
   signUp: (req: Request<unknown, unknown, signUpBody>, res: Response) => void;
   verifyEmail: (
     req: Request<unknown, unknown, verifyBody>,
-    res: Response
+    res: Response,
   ) => void;
   resendVerificationCode: (
     req: Request<unknown, unknown, resendVerificationCodeBody>,
-    res: Response
+    res: Response,
   ) => void;
   forgotPassword: (
     req: Request<null, null, forgotPasswordBody>,
-    res: Response
+    res: Response,
   ) => void;
   forgotPasswordConfirm: (
     req: Request<null, null, forgotPasswordConfirmBody>,
-    res: Response
+    res: Response,
   ) => void;
   callBack: (req: Request<callBackParams>, res: Response) => void;
   isAuthenticated: (req: Request, res: Response) => void;
@@ -129,9 +129,11 @@ interface Auth {
 export class AuthController implements Auth {
   private logger: Logger;
   private client: CognitoIdentityServiceProvider;
+  private response: ResponseHandler;
 
   constructor(config: authControllerConfig) {
     this.logger = config.logger;
+    this.response = new ResponseHandler({ logger: this.logger });
     this.client = new CognitoIdentityServiceProvider({
       region: config.cognitoRegion,
       credentials: {
@@ -143,7 +145,7 @@ export class AuthController implements Auth {
 
   deleteUser = async (
     req: Request<unknown, unknown, deleteUserBody>,
-    res: Response
+    res: Response,
   ) => {
     // try {
     //   const { id } = req.body;
@@ -170,7 +172,7 @@ export class AuthController implements Auth {
       const usersResp = await this.client.listUsers(params);
       if (!usersResp.Users) {
         this.logger.debug('No users found');
-        return res.status(200).json({ users: [] });
+        return this.response.sendSuccess(res, { users: [] });
       }
 
       const users: UserAttributes[] = usersResp.Users.map((user) => {
@@ -185,7 +187,7 @@ export class AuthController implements Auth {
               [attributeName]: attributeValue,
             };
           },
-          {}
+          {},
         );
 
         return {
@@ -198,10 +200,11 @@ export class AuthController implements Auth {
         } as UserAttributes;
       }).filter((user): user is UserAttributes => user !== null);
 
-      return res.status(200).json({ users: users });
+      return this.response.sendSuccess(res, { users });
     } catch (error) {
       this.logger.error('Error fetching users:', error);
-      return res.status(500).json({ message: 'Error fetching users', error });
+
+      return this.response.sendError(res, 500, 'Error fetching users', error);
     }
   };
 
@@ -281,12 +284,16 @@ export class AuthController implements Auth {
 
       const cognitoAuthUrl = `https://${AWSDomain}/oauth2/authorize?identity_provider=${identityProvider}&redirect_uri=${callbackUrl}&response_type=${responseType}&client_id=${clientId}&state=${state}&scope=email%20openid%20profile%20aws.cognito.signin.user.admin&nonce=${nonce}&prompt=login`;
 
-      return res.status(200).json({ redirectUrl: cognitoAuthUrl });
+      return this.response.sendSuccess(res, { redirectUrl: cognitoAuthUrl });
     } catch (error) {
       this.logger.error('Error logging in with social:', error);
-      return res
-        .status(500)
-        .json({ message: 'Error logging in with social', error });
+
+      return this.response.sendError(
+        res,
+        500,
+        'Error logging in with social',
+        error,
+      );
     }
   };
 
@@ -391,7 +398,7 @@ export class AuthController implements Auth {
     const { user } = req.session;
     if (!user) {
       this.logger.error('Not logged in');
-      return res.status(401).json({ message: 'Not logged in' });
+      return this.response.sendError(res, 401, 'Not logged in');
     }
 
     const {
@@ -401,21 +408,24 @@ export class AuthController implements Auth {
     } = user;
     if (!IdToken) {
       this.logger.error('Invalid session');
-      return res.status(401).json({ message: 'Invalid session' });
+      return this.response.sendError(res, 401, 'Invalid session');
     }
 
     if (authType === 'social') {
       req.session.destroy((err) => {
         if (err) {
           this.logger.error('(Social) Error logging out:', err);
-          return res.status(500).json({ message: 'Error logging out', err });
+
+          return this.response.sendError(res, 500, 'Error logging out', err);
         }
       });
       res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
       const logoutGoogle = `${process.env.AWS_COGNITO_DOMAIN}/logout?client_id=${process.env.AWS_COGNITO_CLIENT_ID}&logout_uri=${process.env.WEB_APP_URI}`;
-      return res
-        .status(200)
-        .json({ message: 'User logged out', url: logoutGoogle });
+
+      return this.response.sendSuccess(res, {
+        message: 'User logged out',
+        url: logoutGoogle,
+      });
     }
     const cognitoUser = new CognitoUser({
       Username: username,
@@ -427,7 +437,7 @@ export class AuthController implements Auth {
         IdToken: new CognitoIdToken({ IdToken }),
         AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
         RefreshToken: new CognitoRefreshToken({ RefreshToken }),
-      })
+      }),
     );
 
     cognitoUser.globalSignOut({
@@ -435,76 +445,82 @@ export class AuthController implements Auth {
         req.session.destroy((err) => {
           if (err) {
             this.logger.error('(Cognito) Error logging out:', err);
-            return res.status(500).send('Failed to log out');
+
+            return this.response.sendErrorNonJSON(
+              res,
+              500,
+              'Error logging out',
+            );
           }
         });
         res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
-        return res.status(200).send('Logged out successfully');
+        return this.response.sendSuccessNonJSON(res, 'Logged out successfully');
       },
       onFailure: (err) => {
         this.logger.error('(Cognito) Error logging out:', err);
-        return res.status(500).send('Failed to sign out');
+
+        return this.response.sendErrorNonJSON(res, 500, 'Error logging out');
       },
     });
   };
 
   signUp = async (
     req: Request<unknown, unknown, signUpBody>,
-    res: Response
+    res: Response,
   ) => {
     const { username, password, email, given_name, family_name } = req.body;
 
     const userAttributes = [];
     userAttributes.push(
-      new CognitoUserAttribute({ Name: 'email', Value: email })
+      new CognitoUserAttribute({ Name: 'email', Value: email }),
     );
     userAttributes.push(
-      new CognitoUserAttribute({ Name: 'given_name', Value: given_name })
+      new CognitoUserAttribute({ Name: 'given_name', Value: given_name }),
     );
     userAttributes.push(
-      new CognitoUserAttribute({ Name: 'family_name', Value: family_name })
+      new CognitoUserAttribute({ Name: 'family_name', Value: family_name }),
     );
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'updated_at',
         Value: new Date().getTime().toString(),
-      })
+      }),
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'name',
         Value: `${given_name} ${family_name}`,
-      })
+      }),
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'zoneinfo',
         Value: 'Europe/London',
-      })
+      }),
     );
 
     try {
       userPool.signUp(username, password, userAttributes, [], async (err) => {
         if (err) {
           this.logger.error('Error signing up:', err);
-          return res.status(409).json({ message: 'Error signing up', err });
+
+          return this.response.sendError(res, 409, 'Error signing up', err);
         } else {
-          res.status(200).json({ message: 'User created successfully' });
+          return this.response.sendSuccess(res, 'User created successfully');
         }
       });
     } catch (error) {
-      console.log('here');
-
       this.logger.error('Error confirming user:', error);
-      res.status(500).json({ message: 'Error confirming user', error });
+
+      return this.response.sendError(res, 500, 'Error confirming user', error);
     }
   };
 
   verifyEmail = async (
     req: Request<unknown, unknown, verifyBody>,
-    res: Response
+    res: Response,
   ) => {
     const { username, code } = req.body;
 
@@ -518,18 +534,19 @@ export class AuthController implements Auth {
     cognitoUser.confirmRegistration(code, true, (err, result) => {
       if (err) {
         console.error(err);
-        return res.status(400).json({ error: err.message });
+
+        return this.response.sendError(res, 400, 'User verification failed', {
+          error: err.message,
+        });
       } else {
-        return res
-          .status(200)
-          .json({ message: 'User verification successful' });
+        return this.response.sendSuccess(res, 'User verification successful');
       }
     });
   };
 
   resendVerificationCode = async (
     req: Request<unknown, unknown, resendVerificationCodeBody>,
-    res: Response
+    res: Response,
   ) => {
     try {
       const { username } = req.body;
@@ -547,7 +564,7 @@ export class AuthController implements Auth {
 
   forgotPassword = async (
     req: Request<null, null, forgotPasswordBody>,
-    res: Response
+    res: Response,
   ) => {
     const { username } = req.body;
 
@@ -576,7 +593,7 @@ export class AuthController implements Auth {
 
   forgotPasswordConfirm = async (
     req: Request<null, null, forgotPasswordConfirmBody>,
-    res: Response
+    res: Response,
   ) => {
     const { username, code, password } = req.body;
 
@@ -636,7 +653,7 @@ export class AuthController implements Auth {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-        }
+        },
       );
 
       const { id_token, access_token, refresh_token } = response.data;

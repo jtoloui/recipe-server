@@ -1,8 +1,8 @@
 import express from 'express';
 
-import { ConfigType } from '../config/config';
 import { AuthController } from '../controllers/authController';
 import { isAdmin } from '../middleware/authenticated';
+import { ConfigType } from '../types/config/config';
 
 export const authRoutes = (config: ConfigType) => {
   const router = express.Router();

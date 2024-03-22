@@ -1,3 +1,4 @@
-export type errorResponse = {
+export type errorResponse<T> = {
   message: string;
+  error?: T;
 };

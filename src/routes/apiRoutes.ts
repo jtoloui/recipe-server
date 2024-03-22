@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import { ConfigType } from '../config/config';
+import { ConfigType } from '../types/config/config';
 import { authRoutes } from './authRoutes';
 import { healthRoutes } from './healthRoutes';
 import { labelRoutes } from './labelRoutes';

@@ -1,10 +1,7 @@
 import winston from 'winston';
 import { z } from 'zod';
 
-export const newLoggerSchema = z
-  .function()
-  .args(z.string(), z.string())
-  .returns(z.instanceof(winston.Logger));
+import { newLoggerSchema } from '../schemas/config';
 
 export type newLoggerType = z.infer<typeof newLoggerSchema>;
 
