@@ -9,6 +9,14 @@ export interface controllerConfig {
   logger: winston.Logger;
 }
 
+interface awsConfig {
+  cognitoRegion: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
+export interface authControllerConfig extends controllerConfig, awsConfig {}
+
 const ConfigSchema = z.object({
   port: z.string(),
   logLevel: z

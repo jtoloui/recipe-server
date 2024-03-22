@@ -2,26 +2,15 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 
 import RecipeModel, { RecipeAttributes } from '../models/recipe';
-import { getMeasurementsType, groupRecipesByLabel } from '../queries';
+import { getMeasurementsType } from '../queries';
 import { convertRecipeZodToMongo, createRecipeSchema } from '../schemas';
 import { controllerConfig } from '../config/config';
 import { Logger } from 'winston';
-
-type getRecipesByLabelParams = {
-  label: string;
-};
 
 interface Recipe {
   getAllRecipes: (req: Request, res: Response) => Promise<Response>;
   getRecipeById: (req: Request, res: Response) => Promise<Response>;
   createRecipe: (req: Request, res: Response) => Promise<Response>;
-  getRecipesLabels: (req: Request, res: Response) => Promise<Response>;
-  getRecipesByLabel: (
-    req: Request<getRecipesByLabelParams>,
-    res: Response,
-  ) => Promise<Response>;
-  measurementsType: (req: Request, res: Response) => Promise<Response>;
-  getPopularLabels: (req: Request, res: Response) => Promise<Response>;
 }
 export class RecipeController implements Recipe {
   private logger: Logger;
@@ -108,130 +97,6 @@ export class RecipeController implements Recipe {
       }
       this.logger.error(`Request ID: ${req.id} - ${error}`);
       return res.status(500).json({ message: 'Error creating recipe' });
-    }
-  };
-
-  getRecipesLabels = async (req: Request, res: Response) => {
-    try {
-      const labels = await RecipeModel.aggregate(groupRecipesByLabel);
-
-      return res.status(200).json({ ...labels[0] });
-    } catch (error) {
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
-      return res.status(500).json({ message: 'Error retrieving labels' });
-    }
-  };
-
-  getRecipesByLabel = async (
-    req: Request<getRecipesByLabelParams>,
-    res: Response,
-  ) => {
-    try {
-      const { label } = req.params;
-
-      const findReturnItems: {
-        [K in keyof Partial<RecipeAttributes>]: number;
-      } = {
-        name: 1,
-        labels: 1,
-        imageSrc: 1,
-        ingredients: 1,
-        timeToCook: 1,
-      };
-      this.logger.debug(
-        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - ${label}`,
-      );
-
-      if (label.toLocaleLowerCase() === 'all') {
-        const recipes = await RecipeModel.find({}, findReturnItems);
-        const recipesWithTotalTime = recipes.map((recipe) => {
-          const totalHours = recipe.timeToCook.totalHours || 0;
-          const totalMinutes = recipe.timeToCook.totalMinutes || 0;
-          const totalTime =
-            totalHours >= 1
-              ? `${parseFloat(totalHours.toFixed(2))} hrs`
-              : `${parseFloat(totalMinutes.toFixed(2))} mins`;
-          return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
-        });
-        return res.status(200).json(recipesWithTotalTime);
-      }
-      const recipes = await RecipeModel.find(
-        { labels: { $regex: new RegExp(`^${label}$`, 'i') } },
-        findReturnItems,
-      );
-      const recipesWithTotalTime = recipes.map((recipe) => {
-        const totalHours = recipe.timeToCook.totalHours || 0;
-        const totalMinutes = recipe.timeToCook.totalMinutes || 0;
-        const totalTime =
-          totalHours >= 1
-            ? `${parseFloat(totalHours.toFixed(2))} hrs`
-            : `${parseFloat(totalMinutes.toFixed(2))} mins`;
-        return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
-      });
-      return res.status(200).json(recipesWithTotalTime);
-    } catch (error) {
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
-      return res.status(500).json({ message: 'Error retrieving recipes' });
-    }
-  };
-
-  measurementsType = async (req: Request, res: Response) => {
-    try {
-      const measurementsAgg = await RecipeModel.aggregate(getMeasurementsType);
-      return res
-        .status(200)
-        .json({ measurements: measurementsAgg[0].measurements });
-    } catch (error) {
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
-      return res.status(500).json({ message: 'Error retrieving measurements' });
-    }
-  };
-
-  getPopularLabels = async (req: Request, res: Response) => {
-    try {
-      const popularLabels = await RecipeModel.aggregate([
-        { $unwind: '$labels' },
-        {
-          $group: {
-            _id: { $toLower: '$labels' },
-            count: { $sum: 1 },
-          },
-        },
-        { $sort: { count: -1 } },
-        { $limit: 10 },
-        {
-          $addFields: {
-            capitalizedLabel: {
-              $concat: [
-                {
-                  $toUpper: {
-                    $substrCP: ['$_id', 0, 1],
-                  },
-                },
-                {
-                  $substrCP: [
-                    '$_id',
-                    1,
-                    {
-                      $subtract: [{ $strLenCP: '$_id' }, 1],
-                    },
-                  ],
-                },
-              ],
-            },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            labels: { $push: '$capitalizedLabel' },
-          },
-        },
-      ]);
-      return res.status(200).json({ ...popularLabels[0] });
-    } catch (error) {
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
-      return res.status(500).json({ message: 'Error retrieving labels' });
     }
   };
 }

@@ -13,7 +13,6 @@ import logger from './src/logger/winston';
 import assignId from './src/middleware/requestId';
 // routes
 import { apiRoutes } from './src/routes/apiRoutes';
-import authRoutes from './src/routes/authRoutes';
 import { corsOptions } from './src/utils/cors';
 import { newConfig } from './src/config/config';
 
@@ -100,7 +99,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 // Routes
-app.use('/auth', authRoutes);
 app.use('/api', apiRoutes(config));
 
 if (process.env.NODE_ENV !== 'production') {

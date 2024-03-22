@@ -14,10 +14,12 @@ import {
 import axios from 'axios';
 import crypto from 'crypto';
 import { Request, Response } from 'express';
-import jwt, { JwtPayload, decode } from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 
 import { poolData, userPool } from '../auth/awsCognito';
 import logger from '../logger/winston';
+import { Logger } from 'winston';
+import { authControllerConfig } from '../config/config';
 
 type deleteUserBody = {
   id: string;
@@ -73,51 +75,75 @@ type resendVerificationCodeBody = {
   username: string;
 };
 
-const winstonLogger = logger('info', 'Auth Controller');
+// const winstonLogger = logger('info', 'Auth Controller');
 
-const client = new CognitoIdentityServiceProvider({
-  region: process.env.AWS_COGNITO_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-  },
-});
+// const client = new CognitoIdentityServiceProvider({
+//   region: process.env.AWS_COGNITO_REGION,
+//   credentials: {
+//     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+//     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+//   },
+// });
 
-const addUserToUserGroup = async (username: string) => {
-  const params = {
-    Username: username,
-    UserPoolId: poolData.UserPoolId,
-    GroupName: 'Users',
-  };
+// const addUserToUserGroup = async (username: string) => {
+//   const params = {
+//     Username: username,
+//     UserPoolId: poolData.UserPoolId,
+//     GroupName: 'Users',
+//   };
 
-  try {
-    await client.adminAddUserToGroup(params);
-    winstonLogger.info(`User ${username} added to group: "User".`);
-  } catch (error) {
-    winstonLogger.error(`Error adding user ${username} to group: "User".`);
-    throw error;
-  }
-};
+//   try {
+//     await client.adminAddUserToGroup(params);
+//     winstonLogger.info(`User ${username} added to group: "User".`);
+//   } catch (error) {
+//     winstonLogger.error(`Error adding user ${username} to group: "User".`);
+//     throw error;
+//   }
+// };
 
-export class AuthController {
-  private logger: ReturnType<typeof logger>;
+interface Auth {
+  login: (req: Request<unknown, unknown, loginBody>, res: Response) => void;
+  loginSocial: (req: Request<loginSocialQuery>, res: Response) => void;
+  logout: (req: Request, res: Response) => void;
+  signUp: (req: Request<unknown, unknown, signUpBody>, res: Response) => void;
+  verifyEmail: (
+    req: Request<unknown, unknown, verifyBody>,
+    res: Response,
+  ) => void;
+  resendVerificationCode: (
+    req: Request<unknown, unknown, resendVerificationCodeBody>,
+    res: Response,
+  ) => void;
+  forgotPassword: (
+    req: Request<null, null, forgotPasswordBody>,
+    res: Response,
+  ) => void;
+  forgotPasswordConfirm: (
+    req: Request<null, null, forgotPasswordConfirmBody>,
+    res: Response,
+  ) => void;
+  callBack: (req: Request<callBackParams>, res: Response) => void;
+  isAuthenticated: (req: Request, res: Response) => void;
+}
+
+export class AuthController implements Auth {
+  private logger: Logger;
   private client: CognitoIdentityServiceProvider;
 
-  constructor() {
-    const logLevel = process.env.LOG_LEVEL || 'info';
-    this.logger = logger(logLevel, 'AuthController');
+  constructor(config: authControllerConfig) {
+    this.logger = config.logger;
     this.client = new CognitoIdentityServiceProvider({
-      region: process.env.AWS_COGNITO_REGION,
+      region: config.cognitoRegion,
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+        accessKeyId: config.accessKeyId || '',
+        secretAccessKey: config.secretAccessKey || '',
       },
     });
   }
 
   deleteUser = async (
     req: Request<unknown, unknown, deleteUserBody>,
-    res: Response
+    res: Response,
   ) => {
     // try {
     //   const { id } = req.body;
@@ -141,10 +167,10 @@ export class AuthController {
         UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
       };
 
-      const usersResp = await client.listUsers(params);
+      const usersResp = await this.client.listUsers(params);
       if (!usersResp.Users) {
-        this.logger.error('Error fetching users');
-        return res.status(500).json({ message: 'Error fetching users' });
+        this.logger.debug('No users found');
+        return res.status(200).json({ users: [] });
       }
 
       const users: UserAttributes[] = usersResp.Users.map((user) => {
@@ -159,7 +185,7 @@ export class AuthController {
               [attributeName]: attributeValue,
             };
           },
-          {}
+          {},
         );
 
         return {
@@ -172,7 +198,7 @@ export class AuthController {
         } as UserAttributes;
       }).filter((user): user is UserAttributes => user !== null);
 
-      return res.status(200).json({ users: users || [] });
+      return res.status(200).json({ users: users });
     } catch (error) {
       this.logger.error('Error fetching users:', error);
       return res.status(500).json({ message: 'Error fetching users', error });
@@ -401,7 +427,7 @@ export class AuthController {
         IdToken: new CognitoIdToken({ IdToken }),
         AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
         RefreshToken: new CognitoRefreshToken({ RefreshToken }),
-      })
+      }),
     );
 
     cognitoUser.globalSignOut({
@@ -424,39 +450,39 @@ export class AuthController {
 
   signUp = async (
     req: Request<unknown, unknown, signUpBody>,
-    res: Response
+    res: Response,
   ) => {
     const { username, password, email, given_name, family_name } = req.body;
 
     const userAttributes = [];
     userAttributes.push(
-      new CognitoUserAttribute({ Name: 'email', Value: email })
+      new CognitoUserAttribute({ Name: 'email', Value: email }),
     );
     userAttributes.push(
-      new CognitoUserAttribute({ Name: 'given_name', Value: given_name })
+      new CognitoUserAttribute({ Name: 'given_name', Value: given_name }),
     );
     userAttributes.push(
-      new CognitoUserAttribute({ Name: 'family_name', Value: family_name })
+      new CognitoUserAttribute({ Name: 'family_name', Value: family_name }),
     );
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'updated_at',
         Value: new Date().getTime().toString(),
-      })
+      }),
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'name',
         Value: `${given_name} ${family_name}`,
-      })
+      }),
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'zoneinfo',
         Value: 'Europe/London',
-      })
+      }),
     );
 
     try {
@@ -478,7 +504,7 @@ export class AuthController {
 
   verifyEmail = async (
     req: Request<unknown, unknown, verifyBody>,
-    res: Response
+    res: Response,
   ) => {
     const { username, code } = req.body;
 
@@ -503,7 +529,7 @@ export class AuthController {
 
   resendVerificationCode = async (
     req: Request<unknown, unknown, resendVerificationCodeBody>,
-    res: Response
+    res: Response,
   ) => {
     try {
       const { username } = req.body;
@@ -521,7 +547,7 @@ export class AuthController {
 
   forgotPassword = async (
     req: Request<null, null, forgotPasswordBody>,
-    res: Response
+    res: Response,
   ) => {
     const { username } = req.body;
 
@@ -550,7 +576,7 @@ export class AuthController {
 
   forgotPasswordConfirm = async (
     req: Request<null, null, forgotPasswordConfirmBody>,
-    res: Response
+    res: Response,
   ) => {
     const { username, code, password } = req.body;
 
@@ -610,7 +636,7 @@ export class AuthController {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-        }
+        },
       );
 
       const { id_token, access_token, refresh_token } = response.data;
