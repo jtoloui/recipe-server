@@ -1,17 +1,17 @@
 import mongoose, { ProjectionType } from 'mongoose';
 import { Logger } from 'winston';
 
-import { storeConfig } from '../config/config';
 import RecipeModel, {
   CreateRecipeData,
   Recipe as RecipeType,
 } from '../models/recipe';
+import { storeConfig } from '../types/controller/controller';
 
 interface Recipe {
   getAllRecipes: () => Promise<RecipeType[]>;
   getRecipeById: (
     id: string,
-    projections?: ProjectionType<RecipeType> | null
+    projections?: ProjectionType<RecipeType> | null,
   ) => Promise<RecipeType | null>;
   createRecipe: (recipeData: CreateRecipeData) => Promise<RecipeType>;
 }
@@ -30,7 +30,7 @@ export class RecipeStore implements Recipe {
 
   getRecipeById = async (
     id: string,
-    projections: ProjectionType<RecipeType> | null = {}
+    projections: ProjectionType<RecipeType> | null = {},
   ) => {
     return await RecipeModel.findById(id, projections);
   };

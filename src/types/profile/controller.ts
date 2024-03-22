@@ -10,4 +10,4 @@ export type getProfile = {
   userName: string;
 };
 
-export type getProfileResponse = getProfile | errorResponse;
+export type getProfileResponse = getProfile | errorResponse<undefined>;
