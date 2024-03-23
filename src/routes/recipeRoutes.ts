@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
-import { RecipeController } from '../controllers/recipeController';
-import { isAuthenticated } from '../middleware/authenticated';
-import { ConfigType } from '../types/config/config';
+import { RecipeController } from '@/controllers/recipeController';
+import { isAuthenticated } from '@/middleware/authenticated';
+import { ConfigType } from '@/types/config/config';
 
 export const recipeRoutes = (config: ConfigType) => {
   const router = Router();

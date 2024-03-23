@@ -11,11 +11,7 @@ export const measurementsRoutes = (config: ConfigType) => {
     logger: config.newLogger(config.logLevel, 'MeasurementsController'),
   });
 
-  router.get(
-    '/popular',
-    isAuthenticated,
-    measurementsController.getPopularMeasurements
-  );
+  router.get('/popular', isAuthenticated, measurementsController.getPopularMeasurements);
 
   return router;
 };

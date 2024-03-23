@@ -1,16 +1,11 @@
 import { Logger } from 'winston';
 import { z } from 'zod';
 
-export const newLoggerSchema = z
-  .function()
-  .args(z.string(), z.string())
-  .returns(z.instanceof(Logger));
+export const newLoggerSchema = z.function().args(z.string(), z.string()).returns(z.instanceof(Logger));
 
 export const ConfigSchema = z.object({
   port: z.string(),
-  logLevel: z
-    .enum(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly'])
-    .default('info'),
+  logLevel: z.enum(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']).default('info'),
   mongoUri: z.string().min(1),
   sessionDBName: z.string().min(1),
   sessionCollection: z.string().min(1),

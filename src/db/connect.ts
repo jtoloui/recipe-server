@@ -55,9 +55,7 @@ class DBConnection {
 
   getSessionStore(): MongoStore {
     if (!this.store) {
-      throw new Error(
-        'Session store is not initialized. Call connectSessionStore() first.',
-      );
+      throw new Error('Session store is not initialized. Call connectSessionStore() first.');
     }
     return this.store;
   }

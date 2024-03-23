@@ -22,11 +22,7 @@ export const groupRecipesByLabel = [
               $concat: [
                 { $toUpper: { $substrCP: ['$_id', 0, 1] } },
                 {
-                  $substrCP: [
-                    '$_id',
-                    1,
-                    { $subtract: [{ $strLenCP: '$_id' }, 1] },
-                  ],
+                  $substrCP: ['$_id', 1, { $subtract: [{ $strLenCP: '$_id' }, 1] }],
                 },
               ],
             },

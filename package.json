@@ -4,13 +4,14 @@
   "description": "",
   "main": "index.js",
   "engines": {
-    "node": "18.x"
+    "node": "21.x"
   },
   "scripts": {
     "prebuild": "TZ=UTC node ./scripts/prebuild.js",
-    "build": "TZ=UTC tsc",
+    "build": "TZ=UTC tsc && tsc-alias",
     "start": "TZ=UTC node dist/index.js",
-    "dev": "concurrently \"npx tsc --watch\" \"nodemon -q dist/index.js\"",
+    "dev": "TZ=UTC ts-node -r tsconfig-paths/register index.ts",
+    "watch": "nodemon --watch ./src --exec 'TZ=UTC ts-node index.ts'",
     "dev:bun": "bun --hot run index.ts",
     "prettier": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\" index.ts"
   },
@@ -52,6 +53,9 @@
     "concurrently": "^8.0.1",
     "git-rev-sync": "^3.0.2",
     "nodemon": "^3.1.0",
+    "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.8",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
   }
 }

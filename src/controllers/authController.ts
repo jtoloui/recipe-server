@@ -106,22 +106,10 @@ interface Auth {
   loginSocial: (req: Request<loginSocialQuery>, res: Response) => void;
   logout: (req: Request, res: Response) => void;
   signUp: (req: Request<unknown, unknown, signUpBody>, res: Response) => void;
-  verifyEmail: (
-    req: Request<unknown, unknown, verifyBody>,
-    res: Response,
-  ) => void;
-  resendVerificationCode: (
-    req: Request<unknown, unknown, resendVerificationCodeBody>,
-    res: Response,
-  ) => void;
-  forgotPassword: (
-    req: Request<null, null, forgotPasswordBody>,
-    res: Response,
-  ) => void;
-  forgotPasswordConfirm: (
-    req: Request<null, null, forgotPasswordConfirmBody>,
-    res: Response,
-  ) => void;
+  verifyEmail: (req: Request<unknown, unknown, verifyBody>, res: Response) => void;
+  resendVerificationCode: (req: Request<unknown, unknown, resendVerificationCodeBody>, res: Response) => void;
+  forgotPassword: (req: Request<null, null, forgotPasswordBody>, res: Response) => void;
+  forgotPasswordConfirm: (req: Request<null, null, forgotPasswordConfirmBody>, res: Response) => void;
   callBack: (req: Request<callBackParams>, res: Response) => void;
   isAuthenticated: (req: Request, res: Response) => void;
 }
@@ -143,10 +131,7 @@ export class AuthController implements Auth {
     });
   }
 
-  deleteUser = async (
-    req: Request<unknown, unknown, deleteUserBody>,
-    res: Response,
-  ) => {
+  deleteUser = async (req: Request<unknown, unknown, deleteUserBody>, res: Response) => {
     // try {
     //   const { id } = req.body;
     //   const user = await managementClient.getUser({ id });
@@ -178,17 +163,14 @@ export class AuthController implements Auth {
       const users: UserAttributes[] = usersResp.Users.map((user) => {
         if (!user.Attributes) return null;
 
-        const userAttributes = user.Attributes.reduce<Record<string, string>>(
-          (acc, attribute) => {
-            const attributeName: string = attribute.Name || '';
-            const attributeValue: string = attribute.Value || '';
-            return {
-              ...acc,
-              [attributeName]: attributeValue,
-            };
-          },
-          {},
-        );
+        const userAttributes = user.Attributes.reduce<Record<string, string>>((acc, attribute) => {
+          const attributeName: string = attribute.Name || '';
+          const attributeValue: string = attribute.Value || '';
+          return {
+            ...acc,
+            [attributeName]: attributeValue,
+          };
+        }, {});
 
         return {
           username: user.Username,
@@ -226,9 +208,7 @@ export class AuthController implements Auth {
     cognitoUser.authenticateUser(authenticationDetails, {
       onSuccess: function (result) {
         const accessToken = result.getAccessToken().getJwtToken();
-        const userGroups: string[] | undefined = result
-          .getIdToken()
-          .decodePayload()['cognito:groups'];
+        const userGroups: string[] | undefined = result.getIdToken().decodePayload()['cognito:groups'];
 
         req.session.user = {
           username,
@@ -288,12 +268,7 @@ export class AuthController implements Auth {
     } catch (error) {
       this.logger.error('Error logging in with social:', error);
 
-      return this.response.sendError(
-        res,
-        500,
-        'Error logging in with social',
-        error,
-      );
+      return this.response.sendError(res, 500, 'Error logging in with social', error);
     }
   };
 
@@ -437,7 +412,7 @@ export class AuthController implements Auth {
         IdToken: new CognitoIdToken({ IdToken }),
         AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
         RefreshToken: new CognitoRefreshToken({ RefreshToken }),
-      }),
+      })
     );
 
     cognitoUser.globalSignOut({
@@ -446,11 +421,7 @@ export class AuthController implements Auth {
           if (err) {
             this.logger.error('(Cognito) Error logging out:', err);
 
-            return this.response.sendErrorNonJSON(
-              res,
-              500,
-              'Error logging out',
-            );
+            return this.response.sendErrorNonJSON(res, 500, 'Error logging out');
           }
         });
         res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
@@ -464,41 +435,32 @@ export class AuthController implements Auth {
     });
   };
 
-  signUp = async (
-    req: Request<unknown, unknown, signUpBody>,
-    res: Response,
-  ) => {
+  signUp = async (req: Request<unknown, unknown, signUpBody>, res: Response) => {
     const { username, password, email, given_name, family_name } = req.body;
 
     const userAttributes = [];
-    userAttributes.push(
-      new CognitoUserAttribute({ Name: 'email', Value: email }),
-    );
-    userAttributes.push(
-      new CognitoUserAttribute({ Name: 'given_name', Value: given_name }),
-    );
-    userAttributes.push(
-      new CognitoUserAttribute({ Name: 'family_name', Value: family_name }),
-    );
+    userAttributes.push(new CognitoUserAttribute({ Name: 'email', Value: email }));
+    userAttributes.push(new CognitoUserAttribute({ Name: 'given_name', Value: given_name }));
+    userAttributes.push(new CognitoUserAttribute({ Name: 'family_name', Value: family_name }));
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'updated_at',
         Value: new Date().getTime().toString(),
-      }),
+      })
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'name',
         Value: `${given_name} ${family_name}`,
-      }),
+      })
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'zoneinfo',
         Value: 'Europe/London',
-      }),
+      })
     );
 
     try {
@@ -518,10 +480,7 @@ export class AuthController implements Auth {
     }
   };
 
-  verifyEmail = async (
-    req: Request<unknown, unknown, verifyBody>,
-    res: Response,
-  ) => {
+  verifyEmail = async (req: Request<unknown, unknown, verifyBody>, res: Response) => {
     const { username, code } = req.body;
 
     const userData = {
@@ -544,10 +503,7 @@ export class AuthController implements Auth {
     });
   };
 
-  resendVerificationCode = async (
-    req: Request<unknown, unknown, resendVerificationCodeBody>,
-    res: Response,
-  ) => {
+  resendVerificationCode = async (req: Request<unknown, unknown, resendVerificationCodeBody>, res: Response) => {
     try {
       const { username } = req.body;
       await this.client.resendConfirmationCode({
@@ -562,10 +518,7 @@ export class AuthController implements Auth {
     }
   };
 
-  forgotPassword = async (
-    req: Request<null, null, forgotPasswordBody>,
-    res: Response,
-  ) => {
+  forgotPassword = async (req: Request<null, null, forgotPasswordBody>, res: Response) => {
     const { username } = req.body;
 
     const userData = {
@@ -584,17 +537,12 @@ export class AuthController implements Auth {
       },
       onFailure: function (err) {
         console.error(err);
-        return res
-          .status(400)
-          .json({ message: 'User password reset failed', err });
+        return res.status(400).json({ message: 'User password reset failed', err });
       },
     });
   };
 
-  forgotPasswordConfirm = async (
-    req: Request<null, null, forgotPasswordConfirmBody>,
-    res: Response,
-  ) => {
+  forgotPasswordConfirm = async (req: Request<null, null, forgotPasswordConfirmBody>, res: Response) => {
     const { username, code, password } = req.body;
 
     const userData = {
@@ -653,7 +601,7 @@ export class AuthController implements Auth {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-        },
+        }
       );
 
       const { id_token, access_token, refresh_token } = response.data;

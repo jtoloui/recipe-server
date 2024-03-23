@@ -1,5 +1,6 @@
 import e, { Response } from 'express';
 import { Logger } from 'winston';
+
 import { errorResponse } from '../types/common/error';
 
 interface ResponseHandlerConfig {
@@ -8,12 +9,7 @@ interface ResponseHandlerConfig {
 
 interface Handler {
   sendSuccess<T>(res: Response, data: T, statusCode: number): Response;
-  sendError<T>(
-    res: Response<errorResponse<T>>,
-    statusCode: number,
-    message: string,
-    error?: T,
-  ): Response;
+  sendError<T>(res: Response<errorResponse<T>>, statusCode: number, message: string, error?: T): Response;
 }
 
 class ResponseHandler implements Handler {
@@ -29,11 +25,7 @@ class ResponseHandler implements Handler {
    * @param data - The response data.
    * @param statusCode - The HTTP status code (default: 200).
    */
-  sendSuccess<T>(
-    res: Response<T>,
-    data: T,
-    statusCode: number = 200,
-  ): Response {
+  sendSuccess<T>(res: Response<T>, data: T, statusCode: number = 200): Response {
     this.logger.debug('Sending success response', { statusCode, data });
     return res.status(statusCode).json(data);
   }
@@ -44,11 +36,7 @@ class ResponseHandler implements Handler {
    * @param data - The response data.
    * @param statusCode - The HTTP status code (default: 200).
    */
-  sendSuccessNonJSON<T>(
-    res: Response<T>,
-    data: T,
-    statusCode: number = 200,
-  ): Response {
+  sendSuccessNonJSON<T>(res: Response<T>, data: T, statusCode: number = 200): Response {
     this.logger.debug('Sending success response', { statusCode, data });
     return res.status(statusCode).send(data);
   }
@@ -60,12 +48,7 @@ class ResponseHandler implements Handler {
    * @param message - The error message.
    * @param error - The error object.
    */
-  sendError<T>(
-    res: Response<errorResponse<T>>,
-    statusCode: number = 500,
-    message: string,
-    error?: T,
-  ): Response {
+  sendError<T>(res: Response<errorResponse<T>>, statusCode: number = 500, message: string, error?: T): Response {
     this.logger.error('Sending error response', { statusCode, message });
     return res.status(statusCode).json({
       message,
@@ -79,11 +62,7 @@ class ResponseHandler implements Handler {
    * @param statusCode - The HTTP status code (default: 500).
    * @param message - The error message.
    */
-  sendErrorNonJSON(
-    res: Response,
-    statusCode: number = 500,
-    message: string,
-  ): Response {
+  sendErrorNonJSON(res: Response, statusCode: number = 500, message: string): Response {
     this.logger.error('Sending error response', { statusCode, message });
     return res.status(statusCode).send(message);
   }

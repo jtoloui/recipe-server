@@ -6,10 +6,7 @@ import { getProfileResponse } from '../types/profile/controller';
 import ResponseHandler from '../utils/responseHandler';
 
 interface Profile {
-  getProfile: (
-    req: Request,
-    res: Response,
-  ) => Promise<Response<getProfileResponse>>;
+  getProfile: (req: Request, res: Response) => Promise<Response<getProfileResponse>>;
 }
 
 export class ProfileController implements Profile {

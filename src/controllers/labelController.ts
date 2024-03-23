@@ -12,10 +12,7 @@ type getRecipesByLabelParams = {
 
 interface Label {
   getLabels: (req: Request, res: Response) => Promise<Response>;
-  getByLabel: (
-    req: Request<getRecipesByLabelParams>,
-    res: Response,
-  ) => Promise<Response>;
+  getByLabel: (req: Request<getRecipesByLabelParams>, res: Response) => Promise<Response>;
   getPopularLabels: (req: Request, res: Response) => Promise<Response>;
 }
 
@@ -53,9 +50,7 @@ export class LabelController implements Label {
         ingredients: 1,
         timeToCook: 1,
       };
-      this.logger.debug(
-        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - ${label}`,
-      );
+      this.logger.debug(`UserId: ${req.session.user?.sub} - Request ID: ${req.id} - ${label}`);
 
       if (label.toLocaleLowerCase() === 'all') {
         const recipes = await RecipeModel.find({}, findReturnItems);
@@ -71,17 +66,12 @@ export class LabelController implements Label {
 
         return this.response.sendSuccess(res, recipesWithTotalTime);
       }
-      const recipes = await RecipeModel.find(
-        { labels: { $regex: new RegExp(`^${label}$`, 'i') } },
-        findReturnItems,
-      );
+      const recipes = await RecipeModel.find({ labels: { $regex: new RegExp(`^${label}$`, 'i') } }, findReturnItems);
       const recipesWithTotalTime = recipes.map((recipe) => {
         const totalHours = recipe.timeToCook.totalHours || 0;
         const totalMinutes = recipe.timeToCook.totalMinutes || 0;
         const totalTime =
-          totalHours >= 1
-            ? `${parseFloat(totalHours.toFixed(2))} hrs`
-            : `${parseFloat(totalMinutes.toFixed(2))} mins`;
+          totalHours >= 1 ? `${parseFloat(totalHours.toFixed(2))} hrs` : `${parseFloat(totalMinutes.toFixed(2))} mins`;
         return { ...recipe.toObject(), totalHours, totalMinutes, totalTime };
       });
 
@@ -138,11 +128,7 @@ export class LabelController implements Label {
     } catch (error) {
       this.logger.error(`Request ID: ${req.id} - ${error}`);
 
-      return this.response.sendError(
-        res,
-        500,
-        'Error retrieving popular labels',
-      );
+      return this.response.sendError(res, 500, 'Error retrieving popular labels');
     }
   };
 }

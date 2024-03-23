@@ -27,10 +27,7 @@ export class ServiceController implements Service {
   getHealth = async (req: Request, res: Response) => {
     try {
       const projectRoot = path.resolve(__dirname, '../../');
-      const buildInfoString = fs.readFileSync(
-        path.resolve(projectRoot, 'build-info.json'),
-        'utf8',
-      );
+      const buildInfoString = fs.readFileSync(path.resolve(projectRoot, 'build-info.json'), 'utf8');
 
       const buildInfo: BuildInfo = JSON.parse(buildInfoString);
 

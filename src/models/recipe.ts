@@ -60,11 +60,7 @@ export type CreateRecipeModelData = Omit<
 
 export type CreateRecipeData = Omit<
   RecipeAttributes,
-  | 'timeToCook.totalMinutes'
-  | 'timeToCook.totalHours'
-  | 'timeToCook.totalDays'
-  | 'createdAt'
-  | 'updatedAt'
+  'timeToCook.totalMinutes' | 'timeToCook.totalHours' | 'timeToCook.totalDays' | 'createdAt' | 'updatedAt'
 >;
 
 const timeToCookSchema = new Schema<TimeToCook>(
@@ -73,9 +69,14 @@ const timeToCookSchema = new Schema<TimeToCook>(
     Prep: Number,
   },
   {
-    toJSON: { virtuals: true },
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        delete ret._id;
+      },
+    },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 timeToCookSchema.virtual('totalMinutes').get(function (this: TimeToCook) {
@@ -90,22 +91,54 @@ timeToCookSchema.virtual('totalDays').get(function (this: TimeToCook) {
   return (this.Cook + this.Prep) / (60 * 24);
 });
 
-const nutritionSchema = new Schema<Nutrition>({
-  kcal: Number,
-  sugars: Number,
-  salt: Number,
-  carbs: Number,
-  protein: Number,
-  fat: Number,
-  saturates: Number,
-  fibre: Number,
-});
+const nutritionSchema = new Schema<Nutrition>(
+  {
+    kcal: Number,
+    sugars: Number,
+    salt: Number,
+    carbs: Number,
+    protein: Number,
+    fat: Number,
+    saturates: Number,
+    fibre: Number,
+  },
+  {
+    toJSON: {
+      virtuals: false, // Don't include virtuals in JSON
+      transform: function (doc, ret) {
+        delete ret._id;
+      },
+    },
+    toObject: {
+      virtuals: false, // Include virtuals in object
+      transform: function (doc, ret) {
+        delete ret._id;
+      },
+    },
+  },
+);
 
-const ingredientSchema = new Schema<Ingredient>({
-  item: String,
-  measurement: String,
-  quantity: Number,
-});
+const ingredientSchema = new Schema<Ingredient>(
+  {
+    item: String,
+    measurement: String,
+    quantity: Number,
+  },
+  {
+    toJSON: {
+      virtuals: false,
+      transform: function (doc, ret) {
+        delete ret._id;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        delete ret._id;
+      },
+    },
+  },
+);
 
 const recipeSchema = new Schema<Recipe>(
   {
@@ -131,10 +164,12 @@ const recipeSchema = new Schema<Recipe>(
     creatorId: { type: String, required: true },
     createdAt: { type: Date, required: false },
     updatedAt: { type: Date, required: false },
+    __v: { type: Number, select: false },
   },
   {
     timestamps: true,
-  }
+    versionKey: false,
+  },
 );
 
 // Custom build function
@@ -147,9 +182,6 @@ interface RecipeModelStaticMethods extends mongoose.Model<Recipe> {
   build(recipeAttrs: Partial<Recipe>): Recipe;
 }
 
-const RecipeModel = mongoose.model<Recipe, RecipeModelStaticMethods>(
-  'Recipe',
-  recipeSchema
-);
+const RecipeModel = mongoose.model<Recipe, RecipeModelStaticMethods>('Recipe', recipeSchema);
 
 export default RecipeModel;

@@ -20,9 +20,7 @@ export class newConfig {
   loadConfig(logger: newLoggerType): ConfigType {
     return {
       port: process.env.PORT || '3001',
-      logLevel: process.env.LOG_LEVEL as z.infer<
-        typeof ConfigSchema.shape.logLevel
-      >,
+      logLevel: process.env.LOG_LEVEL as z.infer<typeof ConfigSchema.shape.logLevel>,
       mongoUri: process.env.MONGODB_URI || '',
       sessionDBName: process.env.MONGODB_SESSION_DB || '',
       sessionCollection: process.env.MONGODB_SESSION_COLLECTION || '',

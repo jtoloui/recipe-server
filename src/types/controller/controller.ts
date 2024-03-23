@@ -10,6 +10,8 @@ export interface controllerConfigWithStore extends controllerConfig {
   logLevel: ConfigType['logLevel'];
 }
 
+export interface configWithLogger extends controllerConfigWithStore {}
+
 export interface storeConfig extends controllerConfig {}
 
 interface awsConfig {

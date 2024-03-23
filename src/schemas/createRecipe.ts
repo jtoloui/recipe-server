@@ -76,9 +76,7 @@ export const createRecipeSchema = z.object({
     .min(1, 'Portion size must be at least 1'),
 });
 
-export function convertRecipeZodToMongo(
-  formData: CreateRecipeFormData
-): CreateRecipeModelData {
+export function convertRecipeZodToMongo(formData: CreateRecipeFormData): CreateRecipeModelData {
   return {
     name: formData.recipeName,
     imageSrc: 'hello',
