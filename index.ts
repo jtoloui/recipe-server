@@ -94,6 +94,9 @@ app.use(
 // Middleware to log HTTP Inbound requests
 app.use((req: Request, res: Response, next: NextFunction) => {
   const logger = config.newLogger(logLevel, 'Routes');
+  if (req.session.user) {
+    logger.info(`UserId: ${req.session.user.sub} - Request ID: ${req.id} - HTTP (Inbound) ${req.method} ${req.url}`);
+  }
   logger.info(
     `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - HTTP (Inbound) ${req.method} ${req.url}`,
   );

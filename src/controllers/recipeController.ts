@@ -32,6 +32,7 @@ export class RecipeController implements Recipe {
   getAllRecipes = async (req: Request, res: Response) => {
     try {
       const recipes = await this.service.getAllRecipes();
+      req.session.user.sub;
       // TODO: add custom response mapper
       return this.response.sendSuccess(res, recipes);
     } catch (error) {

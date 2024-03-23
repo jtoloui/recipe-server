@@ -1,8 +1,7 @@
-// import { Request } from 'express';
-import { User } from '@type/common/user';
+import { User } from '@/types/common/user';
 import { RequestContext } from 'express-openid-connect';
-import session from 'express-session';
 import express from 'express';
+import session from 'express-session';
 
 interface UserRequestContext extends RequestContext {
   user?: {
@@ -45,6 +44,19 @@ declare module 'express-serve-static-core' {
   }
 }
 
+declare module 'express-session' {
+  interface SessionData {
+    user?: User;
+    state: string;
+    nonce: string;
+  }
+  interface Session {
+    user?: User;
+    state: string;
+    nonce: string;
+  }
+}
+
 declare module 'express' {
   interface Request {
     id: string;
@@ -67,18 +79,5 @@ declare module 'express' {
         'http://toloui-recipe.com/time-zone': string;
       };
     };
-  }
-}
-
-declare module 'express-session' {
-  interface SessionData {
-    user?: User;
-    state: string;
-    nonce: string;
-  }
-  interface Session {
-    user?: User;
-    state: string;
-    nonce: string;
   }
 }

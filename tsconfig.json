@@ -23,17 +23,8 @@
     "baseUrl": ".",                                     /* Base directory to resolve non-absolute module names. */
     "paths": {
       "@/*": ["src/*"],
-      // "@controllers/*": ["src/controllers/*"],
-      // "@services/*": ["src/services/*"],
-      // "@models/*": ["src/models/*"],
-      // "@utils/*": ["src/utils/*"],
-      // "@middleware/*": ["src/middleware/*"],
-      // "@schemas/*": ["src/schemas/*"],
-      // "@store/*": ["src/store/*"],
-      // "@type/*": ["src/types/*"],
-    },
-    "typeRoots":["./types", "./node_modules/@types"],
+    }
   },
-  "include": ["src/**/*.ts", "index.ts", "types/custom.d.ts", "types/**/*.ts", "./build-info.json"],
+  "include": ["src/**/*.ts", "index.ts", "custom.d.ts", "types/**/*.ts", "./build-info.json"],
   "exclude": ["node_modules"],
 }
