@@ -14,18 +14,16 @@ interface MyJWK extends RSA {
 }
 export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const sessionToken = req.session?.user?.tokens?.IdToken;
-    const cookieToken = req.cookies?.app_session;
-    const userName = req.session?.user?.username;
-
-    if (!sessionToken || !userName || !cookieToken) {
+    if (!req.session?.user?.username || !req.cookies?.app_session || !req.session.user) {
       winstonLogger.error(`[isAuthenticated]: Forbidden - No token provided`);
       return res.status(401).json({ message: 'Forbidden: No token provided' });
     }
 
+    const sessionToken = req.session.user.tokens.IdToken;
+    const userName = req.session.user.username;
     const params = {
       UserPoolId: poolData.UserPoolId,
-      Username: req.session?.user?.username,
+      Username: userName,
     };
     const client = new CognitoIdentityProvider({
       region: process.env.AWS_REGION,
@@ -51,7 +49,7 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
     const {
       data: { keys },
     } = await axios.get<{ keys: MyJWK[] }>(
-      `https://cognito-idp.${process.env.AWS_REGION}.amazonaws.com/${poolData.UserPoolId}/.well-known/jwks.json`
+      `https://cognito-idp.${process.env.AWS_REGION}.amazonaws.com/${poolData.UserPoolId}/.well-known/jwks.json`,
     );
 
     // Find the public key that matches the JWT header
@@ -118,13 +116,13 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
 
       if (!userGroups || userGroups === undefined) {
         winstonLogger.error(
-          `[isAdmin]: Unauthorized - [UserId]: ${req.session.user?.sub} - User does not have any groups`
+          `[isAdmin]: Unauthorized - [UserId]: ${req.session.user?.sub} - User does not have any groups`,
         );
         return res.status(401).json({ message: "Unauthorized: User doesn't belong to a group" });
       }
       if (userGroups.length === 0) {
         winstonLogger.error(
-          `[isAdmin]: Unauthorized - [UserId]: ${req.session.user?.sub} - User does not have any groups`
+          `[isAdmin]: Unauthorized - [UserId]: ${req.session.user?.sub} - User does not have any groups`,
         );
         return res.status(401).json({ message: "Unauthorized: User doesn't belong to a group" });
       }

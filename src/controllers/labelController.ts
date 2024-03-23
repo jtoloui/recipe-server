@@ -32,7 +32,7 @@ export class LabelController implements Label {
 
       return this.response.sendSuccess(res, labelsResponse);
     } catch (error) {
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
+      this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
       return this.response.sendError(res, 500, 'Error retrieving labels');
     }
   };
@@ -50,7 +50,9 @@ export class LabelController implements Label {
         ingredients: 1,
         timeToCook: 1,
       };
-      this.logger.debug(`UserId: ${req.session.user?.sub} - Request ID: ${req.id} - ${label}`);
+      this.logger.debug(
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - ${label}`,
+      );
 
       if (label.toLocaleLowerCase() === 'all') {
         const recipes = await RecipeModel.find({}, findReturnItems);
@@ -77,7 +79,7 @@ export class LabelController implements Label {
 
       return this.response.sendSuccess(res, recipesWithTotalTime);
     } catch (error) {
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
+      this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
       return this.response.sendError(res, 500, 'Error retrieving recipes');
     }
   };
@@ -126,7 +128,7 @@ export class LabelController implements Label {
 
       return this.response.sendSuccess(res, { ...popularLabels[0] });
     } catch (error) {
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
+      this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
 
       return this.response.sendError(res, 500, 'Error retrieving popular labels');
     }

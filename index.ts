@@ -7,6 +7,7 @@ import expressWinston from 'express-winston';
 import fs from 'fs';
 import helmet from 'helmet';
 import https from 'https';
+import * as uuid from 'uuid';
 
 import { newConfig } from './src/config/config';
 import { DBConnection } from './src/db';
@@ -39,7 +40,6 @@ const serverLogger = config.newLogger(logLevel, 'server');
 const winstonLoggerMiddleware = config.newLogger(logLevel, 'Routes');
 
 // middleware - custom
-app.use(assignId);
 
 // middleware - third party
 app.use(helmet());
@@ -57,6 +57,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use(
   session({
+    genid: () => {
+      return uuid.v4();
+    },
     secret: config.sessionSecret || '',
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
@@ -70,6 +73,8 @@ app.use(
     saveUninitialized: false,
   }),
 );
+
+app.use(assignId);
 
 // Middleware to log HTTP Outbound requests
 app.use(
@@ -86,7 +91,7 @@ app.use(
       return level;
     },
     msg: (req, res) =>
-      `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - HTTP (Outbound) ${req.method} ${
+      `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${req.sessionID} - HTTP (Outbound) ${req.method} ${
         req.url
       } - Status: ${res.statusCode} - ${res.statusMessage}`,
   }),
@@ -94,11 +99,8 @@ app.use(
 // Middleware to log HTTP Inbound requests
 app.use((req: Request, res: Response, next: NextFunction) => {
   const logger = config.newLogger(logLevel, 'Routes');
-  if (req.session.user) {
-    logger.info(`UserId: ${req.session.user.sub} - Request ID: ${req.id} - HTTP (Inbound) ${req.method} ${req.url}`);
-  }
   logger.info(
-    `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - HTTP (Inbound) ${req.method} ${req.url}`,
+    `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${req.sessionID} - HTTP (Inbound) ${req.method} ${req.url}`,
   );
   next();
 });

@@ -61,6 +61,9 @@ declare module 'express' {
   interface Request {
     id: string;
     oidc: UserRequestContext;
+    cookies: {
+      app_session?: string;
+    };
     session_token: {
       access_token: string;
       scope: string;

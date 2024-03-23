@@ -32,19 +32,21 @@ export class RecipeController implements Recipe {
   getAllRecipes = async (req: Request, res: Response) => {
     try {
       const recipes = await this.service.getAllRecipes();
-      req.session.user.sub;
+
       // TODO: add custom response mapper
       return this.response.sendSuccess(res, recipes);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error retrieving recipes';
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
+      this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
       return this.response.sendError(res, 500, errorMessage);
     }
   };
 
   getRecipeById = async (req: Request, res: Response) => {
     try {
-      this.logger.debug(`UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Recipe ID: ${req.params.id} `);
+      this.logger.debug(
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Recipe ID: ${req.params.id} `,
+      );
 
       const recipe = await this.service.getRecipeById(req.params.id);
 
@@ -59,7 +61,7 @@ export class RecipeController implements Recipe {
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error retrieving recipes';
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
+      this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
       return this.response.sendError(res, 500, errorMessage);
     }
   };
@@ -69,7 +71,10 @@ export class RecipeController implements Recipe {
       if (!req.session?.user) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
-      this.logger.debug(`UserId: ${req.session.user.sub} - Request ID: ${req.id} - Create Recipe`, req.body);
+      this.logger.debug(
+        `UserId: ${req.session.user.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Create Recipe`,
+        req.body,
+      );
       // const validatedReqData = await createRecipeSchema.parseAsync(req.body);
       // const newRecipeData = convertRecipeZodToMongo(validatedReqData);
       // const { labels } = newRecipeData;
@@ -90,10 +95,10 @@ export class RecipeController implements Recipe {
 
       if (error instanceof z.ZodError) {
         console.log(error.errors);
-        this.logger.error(`Request ID: ${req.id} - ${error.errors}`);
+        this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error.errors}`);
         return this.response.sendError(res, 400, 'Invalid request data');
       }
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
+      this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
       return this.response.sendError(res, 500, 'Error creating recipe');
     }
   };

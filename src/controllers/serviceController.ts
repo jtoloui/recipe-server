@@ -33,7 +33,7 @@ export class ServiceController implements Service {
 
       return this.response.sendSuccess(res, buildInfo);
     } catch (error) {
-      this.logger.error(`Request ID: ${req.id} - ${error}`);
+      this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
       return this.response.sendError(res, 500, 'Error retrieving health');
     }
   };
