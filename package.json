@@ -11,7 +11,7 @@
     "build": "TZ=UTC tsc && tsc-alias",
     "start": "TZ=UTC node dist/index.js",
     "dev": "TZ=UTC ts-node -r tsconfig-paths/register index.ts",
-    "watch": "nodemon --watch ./src --exec 'TZ=UTC ts-node index.ts'",
+    "watch": "nodemon --watch src --exec TZ=UTC ts-node index.ts",
     "dev:bun": "bun --hot run index.ts",
     "prettier": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\" index.ts"
   },

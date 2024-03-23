@@ -1,11 +1,22 @@
-import { RecipeStore } from '@/store/recipeStore';
-import { configWithLogger } from '@/types/controller/controller';
+import { Request } from 'express';
+import { MongooseError } from 'mongoose';
 import { Logger } from 'winston';
-import { RecipeByIdErrors, RecipeServiceErrors } from './errors';
+import { z } from 'zod';
+
 import { RecipeAttributes, Recipe as RecipeType } from '@/models/recipe';
 import { CreateRecipeFormData, convertRecipeZodToMongo, createRecipeSchema } from '@/schemas/index';
+import { RecipeStore } from '@/store/recipeStore';
 import { User } from '@/types/common/user';
-import { Request } from 'express';
+import { configWithLogger } from '@/types/controller/controller';
+import { ServiceError } from '@/utils/errors';
+
+import {
+  RecipeByIdErrors,
+  RecipeCreateErrors,
+  RecipeCreateValidationErrors,
+  RecipeIdInvalidFormat,
+  RecipeServiceErrors,
+} from './errors';
 
 interface Recipe {
   getAllRecipes: () => Promise<RecipeType[]>;
@@ -27,7 +38,10 @@ export class RecipeService implements Recipe {
       return await this.store.getAllRecipes();
     } catch (error) {
       this.logger.error(`Error retrieving recipes: ${error}`);
-      throw RecipeServiceErrors;
+      throw new ServiceError(RecipeServiceErrors, {
+        status: 500,
+        message: 'Error retrieving recipes',
+      });
     }
   }
 
@@ -54,8 +68,18 @@ export class RecipeService implements Recipe {
       };
       return await this.store.getRecipeById(id, findReturnItems);
     } catch (error) {
+      if (error instanceof MongooseError && error.name === 'CastError') {
+        this.logger.debug(`Invalid recipe ID: ${id}`);
+        throw new ServiceError(RecipeIdInvalidFormat, {
+          status: 400,
+          message: 'Invalid recipe ID',
+        });
+      }
       this.logger.error(`Error retrieving recipe: ${error}`);
-      throw RecipeByIdErrors;
+      throw new ServiceError(RecipeByIdErrors, {
+        status: 500,
+        message: 'Error retrieving recipe',
+      });
     }
   }
 
@@ -74,7 +98,21 @@ export class RecipeService implements Recipe {
         recipeAuthor: user.name,
       });
     } catch (error) {
-      throw error;
+      if (error instanceof z.ZodError) {
+        this.logger.debug(`Invalid request payload: ${error.errors}`);
+        throw new ServiceError(RecipeCreateValidationErrors, {
+          status: 400,
+          message: 'Payload did not match schema',
+        });
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Error creating recipe';
+
+      this.logger.debug(`Error creating recipe: ${errorMessage}`);
+      throw new ServiceError(RecipeCreateErrors, {
+        status: 500,
+        message: errorMessage,
+      });
     }
   }
 }

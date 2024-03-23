@@ -51,7 +51,7 @@ export class LabelController implements Label {
         timeToCook: 1,
       };
       this.logger.debug(
-        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - ${label}`,
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - ${label}`
       );
 
       if (label.toLocaleLowerCase() === 'all') {

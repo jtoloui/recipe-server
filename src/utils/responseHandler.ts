@@ -49,7 +49,7 @@ class ResponseHandler implements Handler {
    * @param error - The error object.
    */
   sendError<T>(res: Response<errorResponse<T>>, statusCode: number = 500, message: string, error?: T): Response {
-    this.logger.error('Sending error response', { statusCode, message });
+    this.logger.error(`Sending error response - ${statusCode} - ${message}`);
     return res.status(statusCode).json({
       message,
       error,

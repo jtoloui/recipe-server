@@ -1,13 +1,11 @@
 import { Request, Response } from 'express';
 import { Logger } from 'winston';
-import { z } from 'zod';
 
-import { RecipeAttributes } from '@/models/recipe';
 import { CreateRecipeFormData, convertRecipeZodToMongo, createRecipeSchema } from '@/schemas/index';
-import { controllerConfigWithStore } from '@/types/controller/controller';
-import ResponseHandler from '@/utils/responseHandler';
-
 import { RecipeService } from '@/services/recipeService/recipeService';
+import { controllerConfigWithStore } from '@/types/controller/controller';
+import { ServiceError } from '@/utils/errors';
+import ResponseHandler from '@/utils/responseHandler';
 
 interface Recipe {
   getAllRecipes: (req: Request, res: Response) => Promise<Response>;
@@ -45,7 +43,7 @@ export class RecipeController implements Recipe {
   getRecipeById = async (req: Request, res: Response) => {
     try {
       this.logger.debug(
-        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Recipe ID: ${req.params.id} `,
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Recipe ID: ${req.params.id} `
       );
 
       const recipe = await this.service.getRecipeById(req.params.id);
@@ -60,6 +58,10 @@ export class RecipeController implements Recipe {
         isAuthor,
       });
     } catch (error) {
+      if (error instanceof ServiceError) {
+        return this.response.sendError(res, error.cause.status, error.message);
+      }
+
       const errorMessage = error instanceof Error ? error.message : 'Error retrieving recipes';
       this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
       return this.response.sendError(res, 500, errorMessage);
@@ -68,38 +70,24 @@ export class RecipeController implements Recipe {
 
   createRecipe = async (req: Request<any, any, CreateRecipeFormData>, res: Response) => {
     try {
-      if (!req.session?.user) {
+      if (!req.session.user) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       this.logger.debug(
         `UserId: ${req.session.user.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Create Recipe`,
-        req.body,
+        req.body
       );
-      // const validatedReqData = await createRecipeSchema.parseAsync(req.body);
-      // const newRecipeData = convertRecipeZodToMongo(validatedReqData);
-      // const { labels } = newRecipeData;
-      // const capitalizedLabels = labels.map((label) => label.charAt(0).toUpperCase() + label.slice(1));
-
-      // const newRecipe = await this.store.createRecipe({
-      //   ...newRecipeData,
-      //   creatorId: req.session.user.sub,
-      //   recipeAuthor: req.session.user.name,
-      //   labels: capitalizedLabels,
-      // });
 
       const newRecipe = await this.service.createRecipe(req, req.session.user);
 
       return res.status(201).json(newRecipe);
     } catch (error) {
-      res.set('Content-Type', 'application/json');
-
-      if (error instanceof z.ZodError) {
-        console.log(error.errors);
-        this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error.errors}`);
-        return this.response.sendError(res, 400, 'Invalid request data');
+      if (error instanceof ServiceError) {
+        this.logger.debug(`Invalid request payload: ${error.cause.message}`);
+        return res.status(error.cause.status).json({ message: error.message });
       }
-      this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
-      return this.response.sendError(res, 500, 'Error creating recipe');
+      this.logger.debug(`Error creating recipe: ${error}`);
+      return res.status(500).json({ message: 'Error creating recipe' });
     }
   };
 }

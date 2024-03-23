@@ -71,7 +71,7 @@ app.use(
     store: store,
     resave: false,
     saveUninitialized: false,
-  }),
+  })
 );
 
 app.use(assignId);
@@ -91,25 +91,23 @@ app.use(
       return level;
     },
     msg: (req, res) =>
-      `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${req.sessionID} - HTTP (Outbound) ${req.method} ${
-        req.url
-      } - Status: ${res.statusCode} - ${res.statusMessage}`,
-  }),
+      `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${
+        req.sessionID
+      } - HTTP (Outbound) ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
+  })
 );
 // Middleware to log HTTP Inbound requests
 app.use((req: Request, res: Response, next: NextFunction) => {
   const logger = config.newLogger(logLevel, 'Routes');
   logger.info(
-    `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${req.sessionID} - HTTP (Inbound) ${req.method} ${req.url}`,
+    `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${
+      req.sessionID
+    } - HTTP (Inbound) ${req.method} ${req.url}`
   );
   next();
 });
 // Routes
 app.use('/api', apiRoutes(config));
-
-app.get('*', function (req, res) {
-  res.status(404).send('what???');
-});
 
 if (process.env.NODE_ENV !== 'production') {
   const key = fs.readFileSync('./certs/localhost-key.pem');
