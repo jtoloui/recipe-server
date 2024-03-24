@@ -30,6 +30,7 @@ export class newConfig {
       awsCognitoDomain: process.env.AWS_COGNITO_DOMAIN || '',
       awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
       awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+      awsS3BucketName: process.env.AWS_S3_BUCKET_NAME || '',
       cookieDomain: process.env.COOKIE_DOMAIN || '',
       TZ: process.env.TZ || '',
       newLogger: logger,

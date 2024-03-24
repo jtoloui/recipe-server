@@ -412,7 +412,7 @@ export class AuthController implements Auth {
         IdToken: new CognitoIdToken({ IdToken }),
         AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
         RefreshToken: new CognitoRefreshToken({ RefreshToken }),
-      })
+      }),
     );
 
     cognitoUser.globalSignOut({
@@ -446,21 +446,21 @@ export class AuthController implements Auth {
       new CognitoUserAttribute({
         Name: 'updated_at',
         Value: new Date().getTime().toString(),
-      })
+      }),
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'name',
         Value: `${given_name} ${family_name}`,
-      })
+      }),
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'zoneinfo',
         Value: 'Europe/London',
-      })
+      }),
     );
 
     try {
@@ -601,7 +601,7 @@ export class AuthController implements Auth {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-        }
+        },
       );
 
       const { id_token, access_token, refresh_token } = response.data;

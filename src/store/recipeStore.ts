@@ -1,4 +1,4 @@
-import mongoose, { ProjectionType } from 'mongoose';
+import mongoose, { ClientSession, ProjectionType } from 'mongoose';
 import { Logger } from 'winston';
 
 import RecipeModel, { CreateRecipeData, Recipe as RecipeType } from '@/models/recipe';
@@ -7,7 +7,7 @@ import { storeConfig } from '@/types/controller/controller';
 interface Recipe {
   getAllRecipes: () => Promise<RecipeType[]>;
   getRecipeById: (id: string, projections?: ProjectionType<RecipeType> | null) => Promise<RecipeType | null>;
-  createRecipe: (recipeData: CreateRecipeData) => Promise<RecipeType>;
+  createRecipe: (recipeData: CreateRecipeData, session: ClientSession) => Promise<RecipeType>;
 }
 
 export class RecipeStore implements Recipe {
@@ -26,26 +26,19 @@ export class RecipeStore implements Recipe {
     return await RecipeModel.findById(id, projections);
   };
 
-  createRecipe = async (recipeData: CreateRecipeData) => {
-    const session = await this.store.startSession();
+  createRecipe = async (recipeData: CreateRecipeData, session: ClientSession) => {
     try {
       this.logger.debug('Creating recipe');
-      session.startTransaction();
 
-      const newRecipe = await RecipeModel.create(recipeData);
-
+      const newRecipe = RecipeModel.build(recipeData);
+      newRecipe.imageSrc = `${process.env.AWS_CLOUDFRONT_DOMAIN}/${newRecipe.id}`;
       await newRecipe.validate();
       await newRecipe.save({ session });
 
-      await session.commitTransaction();
-
       return newRecipe;
     } catch (error) {
-      await session.abortTransaction();
       this.logger.error(`Error creating recipe: ${error}`);
       throw error;
-    } finally {
-      session.endSession();
     }
   };
 }

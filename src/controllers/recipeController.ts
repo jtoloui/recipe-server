@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Logger } from 'winston';
 
-import { CreateRecipeFormData, convertRecipeZodToMongo, createRecipeSchema } from '@/schemas/index';
+import { CreateRecipeFormDataRequest } from '@/schemas/index';
 import { RecipeService } from '@/services/recipeService/recipeService';
 import { controllerConfigWithStore } from '@/types/controller/controller';
 import { ServiceError } from '@/utils/errors';
@@ -10,8 +10,9 @@ import ResponseHandler from '@/utils/responseHandler';
 interface Recipe {
   getAllRecipes: (req: Request, res: Response) => Promise<Response>;
   getRecipeById: (req: Request, res: Response) => Promise<Response>;
-  createRecipe: (req: Request<any, any, CreateRecipeFormData>, res: Response) => Promise<Response>;
+  createRecipe: (req: Request<any, any, CreateRecipeFormDataRequest>, res: Response) => Promise<Response>;
 }
+
 export class RecipeController implements Recipe {
   private logger: Logger;
   private service: RecipeService;
@@ -24,6 +25,10 @@ export class RecipeController implements Recipe {
       logger: config.newLogger(config.logLevel, 'RecipeService'),
       newLogger: config.newLogger,
       logLevel: config.logLevel,
+      awsRegion: config.awsRegion,
+      awsS3BucketName: config.awsS3BucketName,
+      awsAccessKeyId: config.awsAccessKeyId,
+      awsSecretAccessKey: config.awsSecretAccessKey,
     });
   }
 
@@ -43,7 +48,7 @@ export class RecipeController implements Recipe {
   getRecipeById = async (req: Request, res: Response) => {
     try {
       this.logger.debug(
-        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Recipe ID: ${req.params.id} `
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Recipe ID: ${req.params.id} `,
       );
 
       const recipe = await this.service.getRecipeById(req.params.id);
@@ -68,14 +73,14 @@ export class RecipeController implements Recipe {
     }
   };
 
-  createRecipe = async (req: Request<any, any, CreateRecipeFormData>, res: Response) => {
+  createRecipe = async (req: Request<any, any, CreateRecipeFormDataRequest>, res: Response) => {
     try {
       if (!req.session.user) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       this.logger.debug(
         `UserId: ${req.session.user.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Create Recipe`,
-        req.body
+        req.body,
       );
 
       const newRecipe = await this.service.createRecipe(req, req.session.user);

@@ -15,6 +15,7 @@ export const ConfigSchema = z.object({
   awsCognitoDomain: z.string().min(1),
   awsAccessKeyId: z.string().min(1),
   awsSecretAccessKey: z.string().min(1),
+  awsS3BucketName: z.string().min(1),
   cookieDomain: z.string().min(1),
   TZ: z.string(),
   log: z.instanceof(Logger),

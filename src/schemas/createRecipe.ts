@@ -4,6 +4,11 @@ import { CreateRecipeModelData } from '../models/recipe';
 
 export type CreateRecipeFormData = z.infer<typeof createRecipeSchema>;
 
+export type CreateRecipeFormDataRequest = {
+  jsonData: string;
+  imageSrc: Express.Multer.File;
+};
+
 const Difficulty = z.enum(['Easy', 'Medium', 'Hard'], {
   errorMap: (error) => {
     switch (error.code) {
@@ -40,7 +45,7 @@ export const createRecipeSchema = z.object({
     .array(
       z.object({
         step: z.string().min(1, "Step can't be empty"),
-      })
+      }),
     )
     .min(1, 'You must have at least one step'),
   ingredients: z
@@ -53,7 +58,7 @@ export const createRecipeSchema = z.object({
             invalid_type_error: 'Quantity must be a number',
           })
           .min(1, 'Quantity must be at least 1'),
-      })
+      }),
     )
     .min(1, 'You must have at least one ingredient'),
   nutritionFacts: z.optional(
@@ -66,7 +71,7 @@ export const createRecipeSchema = z.object({
       fat: z.number().optional().nullable().nullish(),
       saturates: z.number().optional().nullable().nullish(),
       fibre: z.number().optional().nullable().nullish(),
-    })
+    }),
   ),
   labels: z.array(z.string().min(1, 'Must have at least one label')),
   portionSize: z
@@ -79,7 +84,7 @@ export const createRecipeSchema = z.object({
 export function convertRecipeZodToMongo(formData: CreateRecipeFormData): CreateRecipeModelData {
   return {
     name: formData.recipeName,
-    imageSrc: 'hello',
+    imageSrc: 'TEMP_IMAGE_SRC',
     timeToCook: {
       Cook: formData.cookTime,
       Prep: formData.prepTime,
