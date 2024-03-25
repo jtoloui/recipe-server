@@ -251,7 +251,7 @@ export class AuthController implements Auth {
         return res.status(400).json({ message: 'Invalid social login type' });
       }
       const clientId = process.env.AWS_COGNITO_CLIENT_ID;
-      const callbackUrl = `${process.env.API_APP_URI}/auth/callback`;
+      const callbackUrl = `${process.env.API_APP_URI}/api/auth/callback`;
       const responseType = 'CODE';
       const identityProvider = type;
       const AWSDomain = process.env.AWS_COGNITO_DOMAIN || '';
@@ -583,7 +583,7 @@ export class AuthController implements Auth {
       return;
     }
 
-    const callbackUrl = `${process.env.API_APP_URI}/auth/callback`;
+    const callbackUrl = `${process.env.API_APP_URI}/api/auth/callback`;
     const params = {
       grant_type: 'authorization_code',
       client_id: process.env.AWS_COGNITO_CLIENT_ID,
