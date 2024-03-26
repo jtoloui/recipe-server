@@ -1,5 +1,7 @@
 import {
   CognitoIdentityProvider as CognitoIdentityServiceProvider,
+  ConfirmForgotPasswordCommand,
+  ForgotPasswordCommand,
   ListUsersRequest,
 } from '@aws-sdk/client-cognito-identity-provider';
 import {
@@ -474,9 +476,9 @@ export class AuthController implements Auth {
         }
       });
     } catch (error) {
-      this.logger.error('Error confirming user:', error);
+      this.logger.error('Error signing up:', error);
 
-      return this.response.sendError(res, 500, 'Error confirming user', error);
+      return this.response.sendError(res, 500, 'Error signing up');
     }
   };
 
@@ -489,14 +491,11 @@ export class AuthController implements Auth {
     };
 
     const cognitoUser = new CognitoUser(userData);
-
     cognitoUser.confirmRegistration(code, true, (err, result) => {
       if (err) {
-        console.error(err);
+        this.logger.error('User verification failed:', err);
 
-        return this.response.sendError(res, 400, 'User verification failed', {
-          error: err.message,
-        });
+        return this.response.sendError(res, 400, 'User verification failed', err.message);
       } else {
         return this.response.sendSuccess(res, 'User verification successful');
       }
@@ -519,54 +518,43 @@ export class AuthController implements Auth {
   };
 
   forgotPassword = async (req: Request<null, null, forgotPasswordBody>, res: Response) => {
-    const { username } = req.body;
+    try {
+      const { username } = req.body;
 
-    const userData = {
-      Username: username,
-      Pool: userPool,
-    };
+      const command = new ForgotPasswordCommand({
+        ClientId: poolData.ClientId || '',
+        Username: username,
+      });
 
-    const cognitoUser = new CognitoUser(userData);
-
-    cognitoUser.forgotPassword({
-      onSuccess: function (result) {
-        return res.status(200).json({
-          message: 'User password reset',
-          result,
-        });
-      },
-      onFailure: function (err) {
-        console.error(err);
-        return res.status(400).json({ message: 'User password reset failed', err });
-      },
-    });
+      await this.client.send(command);
+      return res.status(200).json({
+        message: 'Forgot password code sent',
+      });
+    } catch (error) {
+      this.logger.error('Error sending forgot password code:', error);
+      return res.status(400).json({ message: 'Error sending forgot password code' });
+    }
   };
 
   forgotPasswordConfirm = async (req: Request<null, null, forgotPasswordConfirmBody>, res: Response) => {
-    const { username, code, password } = req.body;
+    try {
+      const { username, code, password } = req.body;
 
-    const userData = {
-      Username: username,
-      Pool: userPool,
-    };
+      const input = new ConfirmForgotPasswordCommand({
+        ClientId: poolData.ClientId || '',
+        Username: username,
+        ConfirmationCode: code,
+        Password: password,
+      });
 
-    const cognitoUser = new CognitoUser(userData);
-
-    cognitoUser.confirmPassword(code, password, {
-      onSuccess: function (result) {
-        return res.status(200).json({
-          message: 'User password reset confirmed',
-          result,
-        });
-      },
-      onFailure: function (err) {
-        console.error(err);
-        return res.status(400).json({
-          message: 'User password reset confirmation failed',
-          err,
-        });
-      },
-    });
+      await this.client.send(input);
+      return res.status(200).json({
+        message: 'User password reset confirmed',
+      });
+    } catch (error) {
+      this.logger.error('Error confirming forgot password:', error);
+      return res.status(400).json({ message: 'Error confirming forgot password' });
+    }
   };
 
   callBack = async (req: Request<callBackParams>, res: Response) => {
