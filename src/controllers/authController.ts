@@ -543,7 +543,7 @@ export class AuthController implements Auth {
       const input = new ConfirmForgotPasswordCommand({
         ClientId: poolData.ClientId || '',
         Username: username,
-        ConfirmationCode: code,
+        ConfirmationCode: `${code}`,
         Password: password,
       });
 
