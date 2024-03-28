@@ -231,7 +231,7 @@ export class AuthController implements Auth {
         res.cookie('app_session', accessToken, {
           httpOnly: true,
           secure: true, // Uncomment this line if you are using HTTPS
-          domain: process.env.COOKIE_DOMAIN,
+          domain: `.${process.env.COOKIE_DOMAIN}`,
         });
 
         return res.status(200).json({
