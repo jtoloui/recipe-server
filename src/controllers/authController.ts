@@ -231,6 +231,7 @@ export class AuthController implements Auth {
         res.cookie('app_session', accessToken, {
           httpOnly: true,
           secure: true, // Uncomment this line if you are using HTTPS
+          domain: process.env.COOKIE_DOMAIN,
         });
 
         return res.status(200).json({
@@ -396,6 +397,7 @@ export class AuthController implements Auth {
           return this.response.sendError(res, 500, 'Error logging out', err);
         }
       });
+      console.log('authType', authType);
       res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
       const logoutGoogle = `${process.env.AWS_COGNITO_DOMAIN}/logout?client_id=${process.env.AWS_COGNITO_CLIENT_ID}&logout_uri=${process.env.WEB_APP_URI}`;
 
