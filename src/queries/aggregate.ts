@@ -1,3 +1,6 @@
+import { Recipe } from '@/models/recipe';
+import { FilterQuery } from 'mongoose';
+
 export const groupRecipesByLabel = [
   {
     $facet: {
@@ -44,6 +47,13 @@ export const groupRecipesByLabel = [
       labelCounts: 1,
     },
   },
+];
+
+export const groupRecipesByLabelWithQuery = (query: FilterQuery<Recipe>) => [
+  {
+    $match: query,
+  },
+  ...groupRecipesByLabel,
 ];
 
 export const getMeasurementsType = [

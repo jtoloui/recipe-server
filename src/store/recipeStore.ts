@@ -1,13 +1,19 @@
-import mongoose, { ClientSession, ProjectionType } from 'mongoose';
+import mongoose, { ClientSession, Document, FilterQuery, ProjectionElementType, ProjectionType } from 'mongoose';
 import { Logger } from 'winston';
 
-import RecipeModel, { CreateRecipeData, Recipe as RecipeType } from '@/models/recipe';
+import RecipeModel, { CreateRecipeData, RecipeAttributes, Recipe as RecipeType } from '@/models/recipe';
 import { storeConfig } from '@/types/controller/controller';
+import { groupRecipesByLabelWithQuery } from '@/queries';
+import { LabelFromQueryResponse } from './types';
 
 interface Recipe {
-  getAllRecipes: () => Promise<RecipeType[]>;
+  getAllRecipes<T extends keyof RecipeAttributes>(
+    filter?: FilterQuery<RecipeType>,
+    fields?: T[],
+  ): Promise<(Pick<RecipeType, T> & Document)[]>;
   getRecipeById: (id: string, projections?: ProjectionType<RecipeType> | null) => Promise<RecipeType | null>;
   createRecipe: (recipeData: CreateRecipeData, session: ClientSession) => Promise<RecipeType>;
+  getLabelFromQuery: (query: FilterQuery<RecipeType>, withSearch: boolean) => Promise<LabelFromQueryResponse[]>;
 }
 
 export class RecipeStore implements Recipe {
@@ -18,15 +24,25 @@ export class RecipeStore implements Recipe {
     this.store = mongoose;
     this.logger = config.logger;
   }
-  getAllRecipes = async (): Promise<RecipeType[]> => {
-    return await RecipeModel.find({}, {});
-  };
+  async getAllRecipes<T extends keyof RecipeAttributes>(
+    filter: FilterQuery<RecipeType> = {},
+    fields: T[] = [],
+  ): Promise<(Pick<RecipeType, T> & Document)[]> {
+    const projection: ProjectionType<RecipeType> = {};
+    for (const field of fields) {
+      projection[field] = 1;
+    }
+    console.log(filter);
 
-  getRecipeById = async (id: string, projections: ProjectionType<RecipeType> | null = {}) => {
+    const recipes = RecipeModel.find(filter, projection);
+    return await recipes;
+  }
+
+  async getRecipeById(id: string, projections: ProjectionType<RecipeType> | null = {}) {
     return await RecipeModel.findById(id, projections);
-  };
+  }
 
-  createRecipe = async (recipeData: CreateRecipeData, session: ClientSession) => {
+  async createRecipe(recipeData: CreateRecipeData, session: ClientSession) {
     try {
       this.logger.debug('Creating recipe');
 
@@ -40,5 +56,9 @@ export class RecipeStore implements Recipe {
       this.logger.error(`Error creating recipe: ${error}`);
       throw error;
     }
-  };
+  }
+
+  async getLabelFromQuery(query: FilterQuery<RecipeType>, withSearch = true): Promise<LabelFromQueryResponse[]> {
+    return await RecipeModel.aggregate<LabelFromQueryResponse>(groupRecipesByLabelWithQuery(query, withSearch));
+  }
 }

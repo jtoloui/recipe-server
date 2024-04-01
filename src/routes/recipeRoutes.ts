@@ -1,6 +1,6 @@
 import { Request, Router, Response, NextFunction } from 'express';
 
-import { RecipeController } from '@/controllers/recipeController';
+import { RecipeController } from '@/controllers/RecipeController/recipeController';
 import { isAuthenticated } from '@/middleware/authenticated';
 import { ConfigType } from '@/types/config/config';
 import multer from 'multer';
@@ -25,6 +25,7 @@ export const recipeRoutes = (config: ConfigType) => {
     awsAccessKeyId: config.awsAccessKeyId,
     awsSecretAccessKey: config.awsSecretAccessKey,
   });
+
   router.get('/', isAuthenticated, recipeController.getAllRecipes);
   router.get('/:id', isAuthenticated, recipeController.getRecipeById);
   router.post('/', isAuthenticated, (req: Request<any, any, CreateRecipeFormDataRequest>, res: Response) => {

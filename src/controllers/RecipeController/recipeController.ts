@@ -6,12 +6,18 @@ import { RecipeService } from '@/services/recipeService/recipeService';
 import { controllerConfigWithStore } from '@/types/controller/controller';
 import { ServiceError } from '@/utils/errors';
 import ResponseHandler from '@/utils/responseHandler';
+import { getAllRecipesResponseMapper } from './responseMapper';
 
 interface Recipe {
   getAllRecipes: (req: Request, res: Response) => Promise<Response>;
   getRecipeById: (req: Request, res: Response) => Promise<Response>;
   createRecipe: (req: Request<any, any, CreateRecipeFormDataRequest>, res: Response) => Promise<Response>;
 }
+
+type RecipeQuery = {
+  search?: string;
+  label?: string;
+};
 
 export class RecipeController implements Recipe {
   private logger: Logger;
@@ -32,12 +38,11 @@ export class RecipeController implements Recipe {
     });
   }
 
-  getAllRecipes = async (req: Request, res: Response) => {
+  getAllRecipes = async (req: Request<any, any, any, RecipeQuery>, res: Response) => {
     try {
-      const recipes = await this.service.getAllRecipes();
+      const recipes = await this.service.getAllRecipes(req.query.search, req.query.label);
 
-      // TODO: add custom response mapper
-      return this.response.sendSuccess(res, recipes);
+      return this.response.sendSuccess(res, getAllRecipesResponseMapper(recipes));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error retrieving recipes';
       this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
@@ -47,8 +52,13 @@ export class RecipeController implements Recipe {
 
   getRecipeById = async (req: Request, res: Response) => {
     try {
-      this.logger.debug(
-        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Recipe ID: ${req.params.id} `,
+      this.logger.info(
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Recipe ID: ${req.params.id}\n %j\n`,
+        {
+          userId: req.session.user?.sub,
+          recipeId: req.params.id,
+          gello: 1,
+        },
       );
 
       const recipe = await this.service.getRecipeById(req.params.id);
