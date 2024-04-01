@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import mongoose, { MongooseError } from 'mongoose';
+import mongoose, { Document, FilterQuery, MongooseError } from 'mongoose';
 import { Logger } from 'winston';
 import { z } from 'zod';
 
@@ -24,9 +24,14 @@ import {
 } from './errors';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { s3Client } from '@/auth/awsS3';
+import { buildOrQuery } from '@/store/utils/queryBuilder';
+import { GetAllRecipesServiceResponse } from './types';
 
 interface Recipe {
-  getAllRecipes: () => Promise<RecipeType[]>;
+  getAllRecipes: (
+    search?: string,
+    label?: string,
+  ) => Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>>;
   getRecipeById: (id: string) => Promise<RecipeType | null>;
   createRecipe: (payload: Request<any, any, CreateRecipeFormDataRequest>, user: User) => Promise<RecipeType>;
 }
@@ -61,15 +66,56 @@ export class RecipeService implements Recipe {
     });
   }
 
-  async getAllRecipes(): Promise<RecipeType[]> {
+  async getAllRecipes(
+    search?: string,
+    label?: string,
+  ): Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>> {
+    const session = await this.tx.startSession();
     try {
-      return await this.store.getAllRecipes();
+      session.startTransaction();
+      let queryConditions: FilterQuery<RecipeType> = {};
+      if (search) {
+        queryConditions = {
+          $or: buildOrQuery<RecipeAttributes>(search, ['name', 'recipeAuthor', 'ingredients.item'], 'i'),
+        };
+      }
+
+      if (label && label.toLocaleLowerCase() !== 'all') {
+        queryConditions.labels = { $regex: new RegExp(`^${label}$`, 'i') };
+      }
+
+      const matchingLabelsCondition = {
+        ...queryConditions,
+      };
+      delete matchingLabelsCondition.labels;
+
+      function assertFields<T extends keyof RecipeAttributes>(fields: T[]): T[] {
+        return fields;
+      }
+
+      const fields = assertFields(['name', 'labels', 'imageSrc', 'ingredients', 'timeToCook']);
+      const recipeQueryResults = await this.store.getAllRecipes(queryConditions, fields);
+      const labelsFromQueryResults = await this.store.getLabelFromQuery(matchingLabelsCondition, !!search);
+
+      const allLabels = await this.store.getLabelFromQuery(queryConditions, false);
+
+      session.commitTransaction();
+
+      const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'> = {
+        recipes: recipeQueryResults,
+        labels: labelsFromQueryResults[0],
+        allLabels: allLabels[0],
+      };
+      return response;
     } catch (error) {
       this.logger.error(`Error retrieving recipes: ${error}`);
+      session.abortTransaction();
       throw new ServiceError(RecipeServiceErrors, {
         status: 500,
         message: 'Error retrieving recipes',
       });
+    } finally {
+      await session.endSession();
     }
   }
 
@@ -138,8 +184,6 @@ export class RecipeService implements Recipe {
         session,
       );
 
-      console.log(imageSrc.mimetype);
-
       const putImageCommand = new PutObjectCommand({
         Bucket: this.awsConfig.awsS3BucketName,
         Key: newRecipe.id,
@@ -163,11 +207,7 @@ export class RecipeService implements Recipe {
           throw new Error('Error uploading image');
         });
     } catch (error) {
-      console.log('here');
-
       await session.abortTransaction();
-
-      console.log(error);
 
       if (error instanceof z.ZodError) {
         this.logger.debug(`Invalid request payload: ${error.errors}`);

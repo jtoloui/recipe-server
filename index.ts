@@ -49,12 +49,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log('req.url', req.url);
-
-  next();
-});
-
 app.use(
   session({
     genid: () => {

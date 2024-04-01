@@ -3,9 +3,10 @@ import mongoose, { Document, Schema } from 'mongoose';
 interface TimeToCook {
   Cook: number;
   Prep: number;
-  totalMinutes?: number;
-  totalHours?: number;
-  totalDays?: number;
+  totalMinutes?: number; // Virtual field for total time in minutes;
+  totalHours?: number; // Virtual field for total time in hours;
+  totalDays?: number; // Virtual field for total time in days;
+  totalTime?: string; // Virtual field for total time in hours or minutes;
 }
 
 interface Nutrition {
@@ -91,6 +92,14 @@ timeToCookSchema.virtual('totalDays').get(function (this: TimeToCook) {
   return (this.Cook + this.Prep) / (60 * 24);
 });
 
+timeToCookSchema.virtual('totalTime').get(function (this: TimeToCook) {
+  const totalHours = this.totalHours || 0;
+  const totalMinutes = this.totalMinutes || 0;
+  const totalTime =
+    totalHours >= 1 ? `${parseFloat(totalHours.toFixed(2))} hrs` : `${parseFloat(totalMinutes.toFixed(2))} mins`;
+  return totalTime;
+});
+
 const nutritionSchema = new Schema<Nutrition>(
   {
     kcal: Number,
@@ -169,6 +178,7 @@ const recipeSchema = new Schema<Recipe>(
   {
     timestamps: true,
     versionKey: false,
+    virtuals: true,
   },
 );
 
