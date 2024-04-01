@@ -6,6 +6,7 @@ import { RecipeService } from '@/services/recipeService/recipeService';
 import { controllerConfigWithStore } from '@/types/controller/controller';
 import { ServiceError } from '@/utils/errors';
 import ResponseHandler from '@/utils/responseHandler';
+
 import { getAllRecipesResponseMapper } from './responseMapper';
 
 interface Recipe {
@@ -58,7 +59,7 @@ export class RecipeController implements Recipe {
           userId: req.session.user?.sub,
           recipeId: req.params.id,
           gello: 1,
-        },
+        }
       );
 
       const recipe = await this.service.getRecipeById(req.params.id);
@@ -90,7 +91,7 @@ export class RecipeController implements Recipe {
       }
       this.logger.debug(
         `UserId: ${req.session.user.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Create Recipe`,
-        req.body,
+        req.body
       );
 
       const newRecipe = await this.service.createRecipe(req, req.session.user);

@@ -1,8 +1,10 @@
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Request } from 'express';
 import mongoose, { Document, FilterQuery, MongooseError } from 'mongoose';
 import { Logger } from 'winston';
 import { z } from 'zod';
 
+import { s3Client } from '@/auth/awsS3';
 import { RecipeAttributes, Recipe as RecipeType } from '@/models/recipe';
 import {
   CreateRecipeFormData,
@@ -11,6 +13,7 @@ import {
   createRecipeSchema,
 } from '@/schemas/index';
 import { RecipeStore } from '@/store/recipeStore';
+import { buildOrQuery } from '@/store/utils/queryBuilder';
 import { User } from '@/types/common/user';
 import { configWithAWS, configWithLogger } from '@/types/controller/controller';
 import { ServiceError } from '@/utils/errors';
@@ -22,15 +25,12 @@ import {
   RecipeIdInvalidFormat,
   RecipeServiceErrors,
 } from './errors';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { s3Client } from '@/auth/awsS3';
-import { buildOrQuery } from '@/store/utils/queryBuilder';
 import { GetAllRecipesServiceResponse } from './types';
 
 interface Recipe {
   getAllRecipes: (
     search?: string,
-    label?: string,
+    label?: string
   ) => Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>>;
   getRecipeById: (id: string) => Promise<RecipeType | null>;
   createRecipe: (payload: Request<any, any, CreateRecipeFormDataRequest>, user: User) => Promise<RecipeType>;
@@ -68,7 +68,7 @@ export class RecipeService implements Recipe {
 
   async getAllRecipes(
     search?: string,
-    label?: string,
+    label?: string
   ): Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>> {
     const session = await this.tx.startSession();
     try {
@@ -181,7 +181,7 @@ export class RecipeService implements Recipe {
           creatorId: user.sub,
           recipeAuthor: user.name,
         },
-        session,
+        session
       );
 
       const putImageCommand = new PutObjectCommand({

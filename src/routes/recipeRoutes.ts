@@ -1,10 +1,10 @@
-import { Request, Router, Response, NextFunction } from 'express';
+import { NextFunction, Request, Response, Router } from 'express';
+import multer from 'multer';
 
 import { RecipeController } from '@/controllers/RecipeController/recipeController';
 import { isAuthenticated } from '@/middleware/authenticated';
-import { ConfigType } from '@/types/config/config';
-import multer from 'multer';
 import { CreateRecipeFormDataRequest } from '@/schemas';
+import { ConfigType } from '@/types/config/config';
 
 const upload = multer({
   storage: multer.memoryStorage(),

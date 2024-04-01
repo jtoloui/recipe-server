@@ -45,7 +45,7 @@ export const createRecipeSchema = z.object({
     .array(
       z.object({
         step: z.string().min(1, "Step can't be empty"),
-      }),
+      })
     )
     .min(1, 'You must have at least one step'),
   ingredients: z
@@ -58,7 +58,7 @@ export const createRecipeSchema = z.object({
             invalid_type_error: 'Quantity must be a number',
           })
           .min(1, 'Quantity must be at least 1'),
-      }),
+      })
     )
     .min(1, 'You must have at least one ingredient'),
   nutritionFacts: z.optional(
@@ -71,7 +71,7 @@ export const createRecipeSchema = z.object({
       fat: z.number().optional().nullable().nullish(),
       saturates: z.number().optional().nullable().nullish(),
       fibre: z.number().optional().nullable().nullish(),
-    }),
+    })
   ),
   labels: z.array(z.string().min(1, 'Must have at least one label')),
   portionSize: z

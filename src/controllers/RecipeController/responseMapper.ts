@@ -1,7 +1,7 @@
 import { GetAllRecipesServiceResponse } from '@/services/recipeService/types';
 
 export const getAllRecipesResponseMapper = (
-  recipes: GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>,
+  recipes: GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>
 ) => {
   return {
     recipes: recipes.recipes,

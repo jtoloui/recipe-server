@@ -77,7 +77,7 @@ const timeToCookSchema = new Schema<TimeToCook>(
       },
     },
     toObject: { virtuals: true },
-  },
+  }
 );
 
 timeToCookSchema.virtual('totalMinutes').get(function (this: TimeToCook) {
@@ -124,7 +124,7 @@ const nutritionSchema = new Schema<Nutrition>(
         delete ret._id;
       },
     },
-  },
+  }
 );
 
 const ingredientSchema = new Schema<Ingredient>(
@@ -146,7 +146,7 @@ const ingredientSchema = new Schema<Ingredient>(
         delete ret._id;
       },
     },
-  },
+  }
 );
 
 const recipeSchema = new Schema<Recipe>(
@@ -179,7 +179,7 @@ const recipeSchema = new Schema<Recipe>(
     timestamps: true,
     versionKey: false,
     virtuals: true,
-  },
+  }
 );
 
 // Custom build function

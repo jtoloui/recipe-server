@@ -1,5 +1,6 @@
-import { Recipe } from '@/models/recipe';
 import { FilterQuery, PipelineStage } from 'mongoose';
+
+import { Recipe } from '@/models/recipe';
 
 export const groupRecipesByLabel: PipelineStage[] = [
   {
