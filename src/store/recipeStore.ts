@@ -32,7 +32,6 @@ export class RecipeStore implements Recipe {
     for (const field of fields) {
       projection[field] = 1;
     }
-    console.log(filter);
 
     const recipes = RecipeModel.find(filter, projection);
     return await recipes;

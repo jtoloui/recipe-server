@@ -6,8 +6,10 @@ export const getAllRecipesResponseMapper = (
   return {
     recipes: recipes.recipes,
     meta: {
-      labels: recipes.labels.labelCounts,
-      totalRecipes: recipes.labels.totalRecipes ?? 0,
+      availableLabels: recipes.labels?.labelCounts || [],
+      totalRecipesMatching: recipes.labels?.totalRecipes ?? 0,
+      allLabels: recipes.allLabels?.labelCounts || [],
+      totalRecipes: recipes.allLabels?.totalRecipes ?? 0,
     },
   };
 };

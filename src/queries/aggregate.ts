@@ -1,7 +1,7 @@
 import { Recipe } from '@/models/recipe';
-import { FilterQuery } from 'mongoose';
+import { FilterQuery, PipelineStage } from 'mongoose';
 
-export const groupRecipesByLabel = [
+export const groupRecipesByLabel: PipelineStage[] = [
   {
     $facet: {
       totalRecipes: [
@@ -38,6 +38,11 @@ export const groupRecipesByLabel = [
             count: 1,
           },
         },
+        {
+          $sort: {
+            label: 1, // 1 for ascending order, -1 for descending
+          },
+        },
       ],
     },
   },
@@ -49,12 +54,70 @@ export const groupRecipesByLabel = [
   },
 ];
 
-export const groupRecipesByLabelWithQuery = (query: FilterQuery<Recipe>) => [
-  {
-    $match: query,
-  },
-  ...groupRecipesByLabel,
-];
+export const groupRecipesByLabelWithQuery = (query: FilterQuery<Recipe>, withSearch: boolean) => {
+  // Start with an empty array or with the $match stage if withSearch is true
+  const pipeline: PipelineStage[] = withSearch ? [{ $match: query }, ...groupRecipesByLabel] : [...groupRecipesByLabel];
+  return pipeline;
+};
+
+// export const groupRecipesByLabelWithQuery = (query: FilterQuery<Recipe>, withSearch: boolean) => [
+//   {
+//     $facet: {
+//       // Count matching the specific conditions
+//       matchingLabels: withSearch
+//         ? [
+//             { $match: query },
+//             { $unwind: '$labels' },
+//             { $group: { _id: { $toLower: '$labels' }, count: { $sum: 1 } } },
+//             {
+//               $addFields: {
+//                 label: {
+//                   $concat: [
+//                     { $toUpper: { $substrCP: ['$_id', 0, 1] } },
+//                     { $substrCP: ['$_id', 1, { $subtract: [{ $strLenCP: '$_id' }, 1] }] },
+//                   ],
+//                 },
+//               },
+//             },
+//             { $project: { _id: 0, label: 1, count: 1 } },
+//             { $sort: { label: 1 } },
+//           ]
+//         : [],
+
+//       // Count across all documents, irrespective of conditions
+//       allLabels: [
+//         { $unwind: '$labels' },
+//         { $group: { _id: { $toLower: '$labels' }, count: { $sum: 1 } } },
+//         {
+//           $addFields: {
+//             label: {
+//               $concat: [
+//                 { $toUpper: { $substrCP: ['$_id', 0, 1] } },
+//                 { $substrCP: ['$_id', 1, { $subtract: [{ $strLenCP: '$_id' }, 1] }] },
+//               ],
+//             },
+//           },
+//         },
+//         { $project: { _id: 0, label: 1, count: 1 } },
+//         { $sort: { label: 1 } },
+//       ],
+
+//       // Total recipes count matching the specific conditions
+//       totalMatchingRecipes: withSearch ? [{ $match: query }, { $count: 'total' }] : [],
+
+//       // Total recipes count across all documents
+//       totalRecipes: [{ $count: 'total' }],
+//     },
+//   },
+//   {
+//     $project: {
+//       // matchingLabels: 1,
+//       allLabels: 1,
+//       totalMatchingRecipes: { $arrayElemAt: ['$totalMatchingRecipes.total', 0] },
+//       totalRecipes: { $arrayElemAt: ['$totalRecipes.total', 0] },
+//     },
+//   },
+// ];
 
 export const getMeasurementsType = [
   { $unwind: '$ingredients' },

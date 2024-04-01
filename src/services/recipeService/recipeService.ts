@@ -84,25 +84,27 @@ export class RecipeService implements Recipe {
         queryConditions.labels = { $regex: new RegExp(`^${label}$`, 'i') };
       }
 
+      const matchingLabelsCondition = {
+        ...queryConditions,
+      };
+      delete matchingLabelsCondition.labels;
+
       function assertFields<T extends keyof RecipeAttributes>(fields: T[]): T[] {
         return fields;
       }
 
       const fields = assertFields(['name', 'labels', 'imageSrc', 'ingredients', 'timeToCook']);
       const recipeQueryResults = await this.store.getAllRecipes(queryConditions, fields);
-      const labelsFromQueryResults = await this.store.getLabelFromQuery(queryConditions, search ? true : false);
+      const labelsFromQueryResults = await this.store.getLabelFromQuery(matchingLabelsCondition, !!search);
 
-      console.log(labelsFromQueryResults[0]);
+      const allLabels = await this.store.getLabelFromQuery(queryConditions, false);
 
       session.commitTransaction();
-
-      for (const recipe of recipeQueryResults) {
-        recipe.name;
-      }
 
       const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'> = {
         recipes: recipeQueryResults,
         labels: labelsFromQueryResults[0],
+        allLabels: allLabels[0],
       };
       return response;
     } catch (error) {
@@ -182,8 +184,6 @@ export class RecipeService implements Recipe {
         session,
       );
 
-      console.log(imageSrc.mimetype);
-
       const putImageCommand = new PutObjectCommand({
         Bucket: this.awsConfig.awsS3BucketName,
         Key: newRecipe.id,
@@ -207,11 +207,7 @@ export class RecipeService implements Recipe {
           throw new Error('Error uploading image');
         });
     } catch (error) {
-      console.log('here');
-
       await session.abortTransaction();
-
-      console.log(error);
 
       if (error instanceof z.ZodError) {
         this.logger.debug(`Invalid request payload: ${error.errors}`);
