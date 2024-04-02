@@ -3,5 +3,6 @@ export type LabelFromQueryResponse = {
   labelCounts?: {
     label: string;
     count: number;
+    image: string;
   }[];
 };

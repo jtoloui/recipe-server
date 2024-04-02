@@ -11,6 +11,7 @@ import { getAllRecipesResponseMapper } from './responseMapper';
 
 interface Recipe {
   getAllRecipes: (req: Request, res: Response) => Promise<Response>;
+  getRecipesByUser: (req: Request, res: Response) => Promise<Response>;
   getRecipeById: (req: Request, res: Response) => Promise<Response>;
   createRecipe: (req: Request<any, any, CreateRecipeFormDataRequest>, res: Response) => Promise<Response>;
 }
@@ -51,6 +52,27 @@ export class RecipeController implements Recipe {
     }
   };
 
+  getRecipesByUser = async (req: Request<any, any, any, RecipeQuery>, res: Response) => {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const recipes = await this.service.getRecipesByUser(req.session.user, req.query.search, req.query.label);
+
+      return this.response.sendSuccess(res, getAllRecipesResponseMapper(recipes));
+    } catch (error) {
+      this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
+
+      if (error instanceof ServiceError) {
+        return this.response.sendError(res, error.cause.status, error.message);
+      }
+
+      this.logger.debug(`Error retrieving recipes: ${error}`);
+      return this.response.sendError(res, 500, 'Error retrieving recipes');
+    }
+  };
+
   getRecipeById = async (req: Request, res: Response) => {
     try {
       this.logger.info(
@@ -59,7 +81,7 @@ export class RecipeController implements Recipe {
           userId: req.session.user?.sub,
           recipeId: req.params.id,
           gello: 1,
-        }
+        },
       );
 
       const recipe = await this.service.getRecipeById(req.params.id);
@@ -91,7 +113,7 @@ export class RecipeController implements Recipe {
       }
       this.logger.debug(
         `UserId: ${req.session.user.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Create Recipe`,
-        req.body
+        req.body,
       );
 
       const newRecipe = await this.service.createRecipe(req, req.session.user);

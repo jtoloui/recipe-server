@@ -27,6 +27,7 @@ export const recipeRoutes = (config: ConfigType) => {
   });
 
   router.get('/', isAuthenticated, recipeController.getAllRecipes);
+  router.get('/user', isAuthenticated, recipeController.getRecipesByUser);
   router.get('/:id', isAuthenticated, recipeController.getRecipeById);
   router.post('/', isAuthenticated, (req: Request<any, any, CreateRecipeFormDataRequest>, res: Response) => {
     uploadFile(req, res, (err) => {

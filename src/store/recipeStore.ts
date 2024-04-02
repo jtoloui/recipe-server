@@ -10,7 +10,7 @@ import { LabelFromQueryResponse } from './types';
 interface Recipe {
   getAllRecipes<T extends keyof RecipeAttributes>(
     filter?: FilterQuery<RecipeType>,
-    fields?: T[]
+    fields?: T[],
   ): Promise<(Pick<RecipeType, T> & Document)[]>;
   getRecipeById: (id: string, projections?: ProjectionType<RecipeType> | null) => Promise<RecipeType | null>;
   createRecipe: (recipeData: CreateRecipeData, session: ClientSession) => Promise<RecipeType>;
@@ -27,7 +27,7 @@ export class RecipeStore implements Recipe {
   }
   async getAllRecipes<T extends keyof RecipeAttributes>(
     filter: FilterQuery<RecipeType> = {},
-    fields: T[] = []
+    fields: T[] = [],
   ): Promise<(Pick<RecipeType, T> & Document)[]> {
     const projection: ProjectionType<RecipeType> = {};
     for (const field of fields) {

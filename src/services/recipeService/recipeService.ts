@@ -30,7 +30,12 @@ import { GetAllRecipesServiceResponse } from './types';
 interface Recipe {
   getAllRecipes: (
     search?: string,
-    label?: string
+    label?: string,
+  ) => Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>>;
+  getRecipesByUser: (
+    user: User,
+    search?: string,
+    label?: string,
   ) => Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>>;
   getRecipeById: (id: string) => Promise<RecipeType | null>;
   createRecipe: (payload: Request<any, any, CreateRecipeFormDataRequest>, user: User) => Promise<RecipeType>;
@@ -68,7 +73,7 @@ export class RecipeService implements Recipe {
 
   async getAllRecipes(
     search?: string,
-    label?: string
+    label?: string,
   ): Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>> {
     const session = await this.tx.startSession();
     try {
@@ -98,6 +103,71 @@ export class RecipeService implements Recipe {
       const labelsFromQueryResults = await this.store.getLabelFromQuery(matchingLabelsCondition, !!search);
 
       const allLabels = await this.store.getLabelFromQuery(queryConditions, false);
+
+      session.commitTransaction();
+
+      const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'> = {
+        recipes: recipeQueryResults,
+        labels: labelsFromQueryResults[0],
+        allLabels: allLabels[0],
+      };
+      return response;
+    } catch (error) {
+      this.logger.error(`Error retrieving recipes: ${error}`);
+      session.abortTransaction();
+      throw new ServiceError(RecipeServiceErrors, {
+        status: 500,
+        message: 'Error retrieving recipes',
+      });
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  async getRecipesByUser(
+    user: User,
+    search?: string,
+    label?: string,
+  ): Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>> {
+    const session = await this.tx.startSession();
+    try {
+      session.startTransaction();
+      const defaultConditions: FilterQuery<RecipeType> = { creatorId: user.sub };
+      let queryConditions: FilterQuery<RecipeType> = defaultConditions;
+      if (search) {
+        queryConditions = {
+          $and: [
+            queryConditions,
+            { $or: buildOrQuery<RecipeAttributes>(search, ['name', 'recipeAuthor', 'ingredients.item'], 'i') },
+          ],
+        };
+      }
+
+      if (label && label.toLocaleLowerCase() !== 'all') {
+        queryConditions.labels = { $regex: new RegExp(`^${label}$`, 'i') };
+      }
+
+      const matchingLabelsCondition = {
+        ...queryConditions,
+      };
+      delete matchingLabelsCondition.labels;
+      const matchLabelsForUserAllRecipes = {
+        ...defaultConditions,
+      };
+      delete matchLabelsForUserAllRecipes.labels;
+
+      function assertFields<T extends keyof RecipeAttributes>(fields: T[]): T[] {
+        return fields;
+      }
+
+      const fields = assertFields(['name', 'labels', 'imageSrc', 'ingredients', 'timeToCook']);
+
+      const recipeQueryResults = await this.store.getAllRecipes(queryConditions, fields);
+      // Get all labels for the user with the search query regardless if search is passed in
+      const labelsFromQueryResults = await this.store.getLabelFromQuery(matchingLabelsCondition, true);
+
+      // Get all labels for the user
+      const allLabels = await this.store.getLabelFromQuery(matchLabelsForUserAllRecipes, true);
 
       session.commitTransaction();
 
@@ -181,7 +251,7 @@ export class RecipeService implements Recipe {
           creatorId: user.sub,
           recipeAuthor: user.name,
         },
-        session
+        session,
       );
 
       const putImageCommand = new PutObjectCommand({

@@ -18,6 +18,7 @@ export const groupRecipesByLabel: PipelineStage[] = [
           $group: {
             _id: { $toLower: '$labels' },
             count: { $sum: 1 },
+            imageSrcs: { $push: '$imageSrc' },
           },
         },
         {
@@ -30,6 +31,7 @@ export const groupRecipesByLabel: PipelineStage[] = [
                 },
               ],
             },
+            image: { $arrayElemAt: ['$imageSrcs', 0] },
           },
         },
         {
@@ -37,6 +39,7 @@ export const groupRecipesByLabel: PipelineStage[] = [
             _id: 0,
             label: 1,
             count: 1,
+            image: 1,
           },
         },
         {
