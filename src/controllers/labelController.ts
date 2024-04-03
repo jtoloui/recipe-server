@@ -46,12 +46,12 @@ export class LabelController implements Label {
       } = {
         name: 1,
         labels: 1,
-        imageSrc: 1,
+        image: 1,
         ingredients: 1,
         timeToCook: 1,
       };
       this.logger.debug(
-        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - ${label}`
+        `UserId: ${req.session.user?.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - ${label}`,
       );
 
       if (label.toLocaleLowerCase() === 'all') {

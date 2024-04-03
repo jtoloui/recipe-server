@@ -26,11 +26,18 @@ interface Ingredient {
   quantity: number;
 }
 
+interface Image {
+  src: string;
+  type: string;
+  originalName: string;
+  storageName: string;
+}
+
 export interface Recipe extends Document, RecipeAttributes {}
 
 export interface RecipeAttributes {
   name: string;
-  imageSrc: string;
+  image: Image;
   recipeAuthor: string;
   timeToCook: TimeToCook;
   difficulty: string | null;
@@ -77,7 +84,7 @@ const timeToCookSchema = new Schema<TimeToCook>(
       },
     },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 timeToCookSchema.virtual('totalMinutes').get(function (this: TimeToCook) {
@@ -124,7 +131,7 @@ const nutritionSchema = new Schema<Nutrition>(
         delete ret._id;
       },
     },
-  }
+  },
 );
 
 const ingredientSchema = new Schema<Ingredient>(
@@ -146,13 +153,36 @@ const ingredientSchema = new Schema<Ingredient>(
         delete ret._id;
       },
     },
-  }
+  },
+);
+
+const imageSchema = new Schema<Image>(
+  {
+    src: String,
+    type: String,
+    originalName: String,
+    storageName: String,
+  },
+  {
+    toJSON: {
+      virtuals: false,
+      transform: function (doc, ret) {
+        delete ret._id;
+      },
+    },
+    toObject: {
+      virtuals: false,
+      transform: function (doc, ret) {
+        delete ret._id;
+      },
+    },
+  },
 );
 
 const recipeSchema = new Schema<Recipe>(
   {
     name: { type: String, required: true, index: true },
-    imageSrc: { type: String, required: false, default: null },
+    image: { type: imageSchema, required: false, default: null, alias: 'imageSrc' },
     recipeAuthor: { type: String, required: true, index: true },
     timeToCook: { type: timeToCookSchema, required: true },
     difficulty: {
@@ -179,7 +209,7 @@ const recipeSchema = new Schema<Recipe>(
     timestamps: true,
     versionKey: false,
     virtuals: true,
-  }
+  },
 );
 
 // Custom build function

@@ -31,12 +31,12 @@ interface Recipe {
   getAllRecipes: (
     search?: string,
     label?: string,
-  ) => Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>>;
+  ) => Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'>>;
   getRecipesByUser: (
     user: User,
     search?: string,
     label?: string,
-  ) => Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>>;
+  ) => Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'>>;
   getRecipeById: (id: string) => Promise<RecipeType | null>;
   createRecipe: (payload: Request<any, any, CreateRecipeFormDataRequest>, user: User) => Promise<RecipeType>;
 }
@@ -74,7 +74,7 @@ export class RecipeService implements Recipe {
   async getAllRecipes(
     search?: string,
     label?: string,
-  ): Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>> {
+  ): Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'>> {
     const session = await this.tx.startSession();
     try {
       session.startTransaction();
@@ -98,7 +98,7 @@ export class RecipeService implements Recipe {
         return fields;
       }
 
-      const fields = assertFields(['name', 'labels', 'imageSrc', 'ingredients', 'timeToCook']);
+      const fields = assertFields(['name', 'labels', 'image', 'ingredients', 'timeToCook']);
       const recipeQueryResults = await this.store.getAllRecipes(queryConditions, fields);
       const labelsFromQueryResults = await this.store.getLabelFromQuery(matchingLabelsCondition, !!search);
 
@@ -106,7 +106,7 @@ export class RecipeService implements Recipe {
 
       session.commitTransaction();
 
-      const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'> = {
+      const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'> = {
         recipes: recipeQueryResults,
         labels: labelsFromQueryResults[0],
         allLabels: allLabels[0],
@@ -128,7 +128,7 @@ export class RecipeService implements Recipe {
     user: User,
     search?: string,
     label?: string,
-  ): Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'>> {
+  ): Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'>> {
     const session = await this.tx.startSession();
     try {
       session.startTransaction();
@@ -160,7 +160,7 @@ export class RecipeService implements Recipe {
         return fields;
       }
 
-      const fields = assertFields(['name', 'labels', 'imageSrc', 'ingredients', 'timeToCook']);
+      const fields = assertFields(['name', 'labels', 'image', 'ingredients', 'timeToCook']);
 
       const recipeQueryResults = await this.store.getAllRecipes(queryConditions, fields);
       // Get all labels for the user with the search query regardless if search is passed in
@@ -171,7 +171,7 @@ export class RecipeService implements Recipe {
 
       session.commitTransaction();
 
-      const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'imageSrc' | 'ingredients' | 'timeToCook'> = {
+      const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'> = {
         recipes: recipeQueryResults,
         labels: labelsFromQueryResults[0],
         allLabels: allLabels[0],
@@ -196,7 +196,7 @@ export class RecipeService implements Recipe {
       } = {
         name: 1,
         labels: 1,
-        imageSrc: 1,
+        image: 1,
         ingredients: 1,
         timeToCook: 1,
         steps: 1,
@@ -239,7 +239,7 @@ export class RecipeService implements Recipe {
       }
 
       const validatedReqData = await createRecipeSchema.parseAsync(payloadData);
-      const newRecipeData = convertRecipeZodToMongo(validatedReqData);
+      const newRecipeData = convertRecipeZodToMongo(validatedReqData, imageSrc);
 
       const { labels } = newRecipeData;
       const capitalizedLabels = labels.map((label) => label.charAt(0).toUpperCase() + label.slice(1));
@@ -256,7 +256,7 @@ export class RecipeService implements Recipe {
 
       const putImageCommand = new PutObjectCommand({
         Bucket: this.awsConfig.awsS3BucketName,
-        Key: newRecipe.id,
+        Key: `${newRecipe.id}-${imageSrc.originalname.toLocaleLowerCase().replace(/ /g, '_')}`,
         Body: imageSrc.buffer,
         ContentType: imageSrc.mimetype,
         Metadata: {

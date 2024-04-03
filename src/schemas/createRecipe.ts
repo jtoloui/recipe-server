@@ -45,7 +45,7 @@ export const createRecipeSchema = z.object({
     .array(
       z.object({
         step: z.string().min(1, "Step can't be empty"),
-      })
+      }),
     )
     .min(1, 'You must have at least one step'),
   ingredients: z
@@ -58,7 +58,7 @@ export const createRecipeSchema = z.object({
             invalid_type_error: 'Quantity must be a number',
           })
           .min(1, 'Quantity must be at least 1'),
-      })
+      }),
     )
     .min(1, 'You must have at least one ingredient'),
   nutritionFacts: z.optional(
@@ -71,7 +71,7 @@ export const createRecipeSchema = z.object({
       fat: z.number().optional().nullable().nullish(),
       saturates: z.number().optional().nullable().nullish(),
       fibre: z.number().optional().nullable().nullish(),
-    })
+    }),
   ),
   labels: z.array(z.string().min(1, 'Must have at least one label')),
   portionSize: z
@@ -81,10 +81,18 @@ export const createRecipeSchema = z.object({
     .min(1, 'Portion size must be at least 1'),
 });
 
-export function convertRecipeZodToMongo(formData: CreateRecipeFormData): CreateRecipeModelData {
+export function convertRecipeZodToMongo(
+  formData: CreateRecipeFormData,
+  image: Express.Multer.File,
+): CreateRecipeModelData {
   return {
     name: formData.recipeName,
-    imageSrc: 'TEMP_IMAGE_SRC',
+    image: {
+      src: 'TEMP',
+      type: image.mimetype,
+      originalName: image.originalname,
+      storageName: 'TEMP',
+    },
     timeToCook: {
       Cook: formData.cookTime,
       Prep: formData.prepTime,

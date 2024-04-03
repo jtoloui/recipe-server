@@ -47,7 +47,9 @@ export class RecipeStore implements Recipe {
       this.logger.debug('Creating recipe');
 
       const newRecipe = RecipeModel.build(recipeData);
-      newRecipe.imageSrc = `${process.env.AWS_CLOUDFRONT_DOMAIN}/${newRecipe.id}`;
+      const imageName = `${newRecipe.id}-${newRecipe.image.originalName.toLocaleLowerCase().replace(/ /g, '_')}`;
+      newRecipe.image.storageName = imageName;
+      newRecipe.image.src = `${process.env.AWS_CLOUDFRONT_DOMAIN}/${imageName}`;
       await newRecipe.validate();
       await newRecipe.save({ session });
 
