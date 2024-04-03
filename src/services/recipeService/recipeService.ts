@@ -260,7 +260,7 @@ export class RecipeService implements Recipe {
 
       const putImageCommand = new PutObjectCommand({
         Bucket: this.awsConfig.awsS3BucketName,
-        Key: `${newRecipe.id}-${imageSrc.originalname.toLocaleLowerCase().replace(/ /g, '_')}`,
+        Key: `images/${newRecipe.id}-${imageSrc.originalname.toLocaleLowerCase().replace(/ /g, '_')}`,
         Body: imageSrc.buffer,
         ContentType: imageSrc.mimetype,
         Metadata: {
@@ -355,7 +355,7 @@ export class RecipeService implements Recipe {
 
       const putImageCommand = new PutObjectCommand({
         Bucket: this.awsConfig.awsS3BucketName,
-        Key: `${updatedRecipe.id}-${imageSrc.originalname.toLocaleLowerCase().replace(/ /g, '_')}`,
+        Key: `images/${updatedRecipe.id}-${imageSrc.originalname.toLocaleLowerCase().replace(/ /g, '_')}`,
         Body: imageSrc.buffer,
         ContentType: imageSrc.mimetype,
         Metadata: {
