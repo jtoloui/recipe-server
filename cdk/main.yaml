@@ -1,0 +1,7 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Master template to orchestrate nested stacks
+Resources:
+  S3BucketStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: 's3://cf-templates-117el0is6q4gg-eu-west-2/s3-bucket.yaml'
