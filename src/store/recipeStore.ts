@@ -58,7 +58,7 @@ export class RecipeStore implements Recipe {
       const newRecipe = RecipeModel.build(recipeData);
       const imageName = `${newRecipe.id}-${newRecipe.image.originalName.toLocaleLowerCase().replace(/ /g, '_')}`;
       newRecipe.image.storageName = imageName;
-      newRecipe.image.src = `${process.env.AWS_CLOUDFRONT_DOMAIN}/${imageName}`;
+      newRecipe.image.src = `${process.env.MEDIA_URI}/${imageName}`;
       await newRecipe.validate();
       await newRecipe.save({ session });
 
@@ -79,7 +79,7 @@ export class RecipeStore implements Recipe {
       const recordData = updateData;
       const imageName = `${recipe.id}-${updateData.image.originalName.toLocaleLowerCase().replace(/ /g, '_')}`;
       recordData.image.storageName = imageName;
-      recordData.image.src = `${process.env.AWS_CLOUDFRONT_DOMAIN}/${imageName}`;
+      recordData.image.src = `${process.env.MEDIA_URI}/${imageName}`;
 
       const updatedRecipe = recipe;
       recipe.set(recordData).$session(session);

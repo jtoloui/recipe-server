@@ -22,5 +22,6 @@ export const ConfigSchema = z.object({
   newLogger: newLoggerSchema,
   webAppUri: z.string().url(),
   apiAppUri: z.string().url(),
+  mediaUri: z.string().url(),
   sessionSecret: z.string().min(1),
 });

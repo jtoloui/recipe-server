@@ -37,6 +37,7 @@ export class newConfig {
       log: this.log,
       webAppUri: process.env.WEB_APP_URI || '',
       apiAppUri: process.env.API_APP_URI || '',
+      mediaUri: process.env.MEDIA_URI || '',
       sessionSecret: process.env.SESSION_SECRET || '',
     };
   }
