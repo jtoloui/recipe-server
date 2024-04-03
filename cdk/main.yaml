@@ -1,7 +1,44 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Master template to orchestrate nested stacks
+Parameters:
+  BucketName:
+    Type: String
+    Description: Name of the S3 bucket
+  AllowedOrigins:
+    Type: CommaDelimitedList
+    Description: List of allowed origins for CORS
+    Default: "https://localhost:3000,https://www.justcook.ing"
+  ACMCertificateARN:
+    Type: String
+    AllowedPattern: "arn:aws:acm:.*"
+    Description: ARN of the ACM certificate for HTTPS
+  CloudFrontDomain:
+    Type: String
+    Description: Domain name to be used as an alias for the CloudFront distribution
+
 Resources:
   S3BucketStack:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: 's3://cf-templates-117el0is6q4gg-eu-west-2/s3-bucket.yaml'
+      TemplateURL: 'https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/s3-bucket.yaml'
+      Parameters:
+        BucketName: !Ref BucketName
+        AllowedOrigins: !Join 
+          - ','
+          - !Ref AllowedOrigins
+  CloudFrontAndOAIStack:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: 'https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/cloudfront-and-oai.yaml'
+      Parameters:
+        S3BucketName: !GetAtt S3BucketStack.Outputs.S3BucketName
+        ACMCertificateARN: !Ref ACMCertificateARN
+        AliasDomainName: !Ref CloudFrontDomain
+
+Outputs:
+  BucketName:
+    Value: !GetAtt S3BucketStack.Outputs.S3BucketName
+    Description: "Name of the S3 bucket with CORS enabled."
+  CloudFrontDistributionDomainName:
+    Value: !GetAtt CloudFrontAndOAIStack.Outputs.CloudFrontDistributionDomainName
+    Description: "The domain name of the CloudFront Distribution"

@@ -1,26 +1,16 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: S3 bucket with CORS and lifecycle rules
 Resources:
-  s3BucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref S3Bucket
-      PolicyDocument: 
-        Statement:
-          - Sid: "Allow get requests originating from all domains"
-            Effect: "Allow"
-            Principal: "*"
-            Action: "s3:GetObject"
-            Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
-            Condition:
-              StringLike:
-                aws:Referer:
-                  - !Ref AllowedOrigins
-
   S3Bucket:
-    Type: "AWS::S3::Bucket"
+    Type: AWS::S3::Bucket
     Properties:
       BucketName: !Ref BucketName
+      VersioningConfiguration:
+        Status: Enabled
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         IgnorePublicAcls: true
@@ -55,7 +45,7 @@ Resources:
         - Key: Name
           Value: !Ref BucketName
 Outputs:
-  BucketName:
+  S3BucketName:
     Value: !Ref S3Bucket
     Description: Name of the sample Amazon S3 bucket with CORS enabled.
 

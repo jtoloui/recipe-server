@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFront Distribution with OAI and ACM Certificate
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Description: The name of the existing S3 bucket to be used as the origin
+  ACMCertificateARN:
+    Type: String
+    Description: The ARN of the ACM certificate for HTTPS
+  AliasDomainName:
+    Type: String
+    Description: The domain name to be used as an alias for the CloudFront distribution
+
+Resources:
+  CloudFrontOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: "OAI for accessing S3 bucket content"
+  
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3BucketName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Sid: "1"
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${S3BucketName}/*"
+  
+  CloudFrontCacheKeyPolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Comment: "Cache policy for JustCooking"
+        DefaultTTL: 86400
+        MaxTTL: 31536000
+        MinTTL: 0
+        Name: JustCookingCachePolicy
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingBrotli: true
+          EnableAcceptEncodingGzip: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: whitelist
+            Headers:
+              - Origin
+              - Access-Control-Request-Method
+              - Access-Control-Request-Headers
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Aliases:
+          - !Ref AliasDomainName
+        HttpVersion: http2
+        Origins:
+          - DomainName: !Sub "${S3BucketName}.s3.amazonaws.com"
+            Id: S3Origin
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOAI}"
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          CachePolicyId: !Ref CloudFrontCacheKeyPolicy
+          AllowedMethods:
+               - 'GET'
+               - 'HEAD'
+               - 'OPTIONS'
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+        ViewerCertificate:
+          AcmCertificateArn: !Ref ACMCertificateARN
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+
+Outputs:
+  CloudFrontDistributionID:
+    Value: !Ref CloudFrontDistribution
+    Description: The ID of the CloudFront Distribution
+  CloudFrontDistributionDomainName:
+    Value: !GetAtt CloudFrontDistribution.DomainName
+    Description: The domain name of the CloudFront Distribution
+  CloudFrontCachePolicyID:
+    Value: !Ref CloudFrontCacheKeyPolicy
+    Description: The ID of the CloudFront Cache Policy
