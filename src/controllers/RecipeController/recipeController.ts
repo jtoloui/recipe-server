@@ -14,6 +14,7 @@ interface Recipe {
   getRecipesByUser: (req: Request, res: Response) => Promise<Response>;
   getRecipeById: (req: Request, res: Response) => Promise<Response>;
   createRecipe: (req: Request<any, any, CreateRecipeFormDataRequest>, res: Response) => Promise<Response>;
+  updateRecipe: (req: Request<any, any, CreateRecipeFormDataRequest>, res: Response) => Promise<Response>;
 }
 
 type RecipeQuery = {
@@ -80,7 +81,6 @@ export class RecipeController implements Recipe {
         {
           userId: req.session.user?.sub,
           recipeId: req.params.id,
-          gello: 1,
         },
       );
 
@@ -128,4 +128,27 @@ export class RecipeController implements Recipe {
       return res.status(500).json({ message: 'Error creating recipe' });
     }
   };
+
+  async updateRecipe(req: Request<{ id: string }, any, CreateRecipeFormDataRequest>, res: Response) {
+    try {
+      if (!req.session.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+      this.logger.debug(
+        `UserId: ${req.session.user.sub} - Request ID: ${req.id} - Session ID: ${req.sessionID} - Update Recipe`,
+        req.body,
+      );
+
+      const updatedRecipe = await this.service.updateRecipe(req, req.session.user);
+
+      return this.response.sendSuccess(res, updatedRecipe);
+    } catch (error) {
+      if (error instanceof ServiceError) {
+        this.logger.debug(`Invalid request payload: ${error.cause.message}`);
+        return this.response.sendError(res, error.cause.status, error.message);
+      }
+      this.logger.debug(`Error updating recipe: ${error}`);
+      return this.response.sendError(res, 500, 'Error updating recipe');
+    }
+  }
 }

@@ -29,6 +29,14 @@ export const recipeRoutes = (config: ConfigType) => {
   router.get('/', isAuthenticated, recipeController.getAllRecipes);
   router.get('/user', isAuthenticated, recipeController.getRecipesByUser);
   router.get('/:id', isAuthenticated, recipeController.getRecipeById);
+  router.put('/:id', isAuthenticated, (req: Request<any, any, CreateRecipeFormDataRequest>, res: Response) => {
+    uploadFile(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({ message: 'Invalid file key name' });
+      }
+      recipeController.updateRecipe(req, res);
+    });
+  });
   router.post('/', isAuthenticated, (req: Request<any, any, CreateRecipeFormDataRequest>, res: Response) => {
     uploadFile(req, res, (err) => {
       if (err) {

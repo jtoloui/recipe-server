@@ -12,9 +12,14 @@ interface Recipe {
     filter?: FilterQuery<RecipeType>,
     fields?: T[],
   ): Promise<(Pick<RecipeType, T> & Document)[]>;
-  getRecipeById: (id: string, projections?: ProjectionType<RecipeType> | null) => Promise<RecipeType | null>;
+  getRecipeById: (
+    id: string,
+    projections?: ProjectionType<RecipeType> | null,
+    session?: ClientSession,
+  ) => Promise<RecipeType | null>;
   createRecipe: (recipeData: CreateRecipeData, session: ClientSession) => Promise<RecipeType>;
   getLabelFromQuery: (query: FilterQuery<RecipeType>, withSearch: boolean) => Promise<LabelFromQueryResponse[]>;
+  updateRecipe: (recipe: RecipeType, updateData: CreateRecipeData, session: ClientSession) => Promise<RecipeType>;
 }
 
 export class RecipeStore implements Recipe {
@@ -38,8 +43,12 @@ export class RecipeStore implements Recipe {
     return await recipes;
   }
 
-  async getRecipeById(id: string, projections: ProjectionType<RecipeType> | null = {}) {
-    return await RecipeModel.findById(id, projections);
+  async getRecipeById(id: string, projections: ProjectionType<RecipeType> | null = {}, session?: ClientSession) {
+    const recipe = RecipeModel.findById(id, projections);
+    if (session) {
+      recipe.session(session);
+    }
+    return await recipe;
   }
 
   async createRecipe(recipeData: CreateRecipeData, session: ClientSession) {
@@ -62,5 +71,27 @@ export class RecipeStore implements Recipe {
 
   async getLabelFromQuery(query: FilterQuery<RecipeType>, withSearch = true): Promise<LabelFromQueryResponse[]> {
     return await RecipeModel.aggregate<LabelFromQueryResponse>(groupRecipesByLabelWithQuery(query, withSearch));
+  }
+
+  async updateRecipe(recipe: RecipeType, updateData: CreateRecipeData, session: ClientSession) {
+    try {
+      this.logger.debug(`Updating recipe with id: ${recipe.id}`);
+      const recordData = updateData;
+      const imageName = `${recipe.id}-${updateData.image.originalName.toLocaleLowerCase().replace(/ /g, '_')}`;
+      recordData.image.storageName = imageName;
+      recordData.image.src = `${process.env.AWS_CLOUDFRONT_DOMAIN}/${imageName}`;
+
+      const updatedRecipe = recipe;
+      recipe.set(recordData).$session(session);
+
+      await updatedRecipe.validate();
+
+      await updatedRecipe.save({ session });
+
+      return updatedRecipe;
+    } catch (error) {
+      this.logger.error(`Error updating recipe: ${error}`);
+      throw error;
+    }
   }
 }

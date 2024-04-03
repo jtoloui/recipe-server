@@ -23,7 +23,10 @@ import {
   RecipeCreateErrors,
   RecipeCreateValidationErrors,
   RecipeIdInvalidFormat,
+  RecipeNotFound,
   RecipeServiceErrors,
+  RecipeUnauthorized,
+  RecipeUpdateErrors,
 } from './errors';
 import { GetAllRecipesServiceResponse } from './types';
 
@@ -39,6 +42,7 @@ interface Recipe {
   ) => Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'>>;
   getRecipeById: (id: string) => Promise<RecipeType | null>;
   createRecipe: (payload: Request<any, any, CreateRecipeFormDataRequest>, user: User) => Promise<RecipeType>;
+  updateRecipe: (payload: Request<any, any, CreateRecipeFormDataRequest>, user: User) => Promise<RecipeType>;
 }
 
 type AwsConfig = {
@@ -262,6 +266,7 @@ export class RecipeService implements Recipe {
         Metadata: {
           originalname: imageSrc.originalname,
           userId: user.sub,
+          recipeId: newRecipe.id,
         },
       });
 
@@ -291,6 +296,105 @@ export class RecipeService implements Recipe {
 
       this.logger.debug(`Error creating recipe: ${errorMessage}`);
       throw new ServiceError(RecipeCreateErrors, {
+        status: 500,
+        message: errorMessage,
+      });
+    } finally {
+      await session.endSession();
+    }
+  }
+
+  async updateRecipe(
+    payload: Request<{ id: string }, any, CreateRecipeFormDataRequest>,
+    user: User,
+  ): Promise<RecipeType> {
+    const session = await this.tx.startSession();
+
+    try {
+      session.startTransaction();
+      const payloadData: CreateRecipeFormData = JSON.parse(payload.body.jsonData);
+      const imageSrc = payload.file;
+
+      if (!imageSrc) {
+        throw new Error('Image not found');
+      }
+
+      const validatedReqData = await createRecipeSchema.parseAsync(payloadData);
+      const updatedRecipeData = convertRecipeZodToMongo(validatedReqData, imageSrc);
+
+      const { labels } = updatedRecipeData;
+      const capitalizedLabels = labels.map((label) => label.charAt(0).toUpperCase() + label.slice(1));
+
+      const currentRecipe = await this.store.getRecipeById(payload.params.id, {}, session);
+
+      if (!currentRecipe) {
+        throw new ServiceError(RecipeNotFound, {
+          status: 404,
+          message: 'Recipe not found',
+        });
+      }
+
+      if (currentRecipe.creatorId !== user.sub) {
+        this.logger.error(`Unauthorized to update recipe -  User: ${user.sub} - Recipe: ${payload.params.id}`);
+        throw new ServiceError(RecipeUnauthorized, {
+          status: 403,
+          message: 'Unauthorized to update recipe',
+        });
+      }
+
+      const updatedRecipe = await this.store.updateRecipe(
+        currentRecipe,
+        {
+          ...updatedRecipeData,
+          labels: capitalizedLabels,
+          creatorId: user.sub,
+          recipeAuthor: user.name,
+        },
+        session,
+      );
+
+      const putImageCommand = new PutObjectCommand({
+        Bucket: this.awsConfig.awsS3BucketName,
+        Key: `${updatedRecipe.id}-${imageSrc.originalname.toLocaleLowerCase().replace(/ /g, '_')}`,
+        Body: imageSrc.buffer,
+        ContentType: imageSrc.mimetype,
+        Metadata: {
+          originalname: imageSrc.originalname,
+          userId: user.sub,
+          recipeId: updatedRecipe.id,
+        },
+      });
+
+      return await this.s3Client
+        .send(putImageCommand)
+        .then(() => {
+          return session.commitTransaction().then(() => {
+            return updatedRecipe;
+          });
+        })
+        .catch((error) => {
+          this.logger.debug(`Error uploading image: ${error}`);
+          throw new Error('Error uploading image');
+        });
+    } catch (error) {
+      await session.abortTransaction();
+
+      if (error instanceof z.ZodError) {
+        this.logger.debug(`Invalid request payload: ${error.errors}`);
+        throw new ServiceError(RecipeCreateValidationErrors, {
+          status: 400,
+          message: 'Payload did not match schema',
+        });
+      }
+
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+
+      const errorMessage = error instanceof Error ? error.message : 'Error updating recipe';
+
+      this.logger.debug(`Error updating recipe: ${errorMessage}`);
+      throw new ServiceError(RecipeUpdateErrors, {
         status: 500,
         message: errorMessage,
       });
