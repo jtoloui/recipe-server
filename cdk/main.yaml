@@ -21,7 +21,8 @@ Parameters:
     NoEcho: true
   CloudFrontDomain:
     Type: String
-    Description: Domain name to be used as an alias for the CloudFront distribution
+    Description: Domain name to be used as an alias for the CloudFront distribution. e.g dev.justcook.ing
+    Default: media-dev.justcook.ing
   UserPoolName:
     Type: String
     Description: The name of the user pool
