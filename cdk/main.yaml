@@ -7,6 +7,9 @@ Parameters:
   BucketName:
     Type: String
     Description: Name of the S3 bucket
+    AllowedPattern: ^[a-z0-9][a-z0-9//.//-]*[a-z0-9]$
+    MinLength: 3
+    MaxLength: 63
   AllowedOrigins:
     Type: CommaDelimitedList
     Description: List of allowed origins for CORS
