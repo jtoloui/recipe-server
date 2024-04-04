@@ -8,12 +8,15 @@ Parameters:
   ACMCertificateARN:
     Type: String
     Description: The ARN of the ACM certificate for HTTPS
+    NoEcho: true
   AliasDomainName:
     Type: String
     Description: The domain name to be used as an alias for the CloudFront distribution
 
 Resources:
   CloudFrontOAI:
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
@@ -21,6 +24,8 @@ Resources:
   
   S3BucketPolicy:
     Type: AWS::S3::BucketPolicy
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
     Properties:
       Bucket: !Ref S3BucketName
       PolicyDocument:
@@ -35,6 +40,8 @@ Resources:
   
   CloudFrontCacheKeyPolicy:
     Type: AWS::CloudFront::CachePolicy
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
     Properties:
       CachePolicyConfig:
         Comment: "Cache policy for JustCooking"
@@ -58,6 +65,8 @@ Resources:
 
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
     Properties:
       DistributionConfig:
         Enabled: true
@@ -97,3 +106,6 @@ Outputs:
   CloudFrontCachePolicyID:
     Value: !Ref CloudFrontCacheKeyPolicy
     Description: The ID of the CloudFront Cache Policy
+  S3BucketPolicy:
+    Value: !Ref S3BucketPolicy
+    Description: The S3 Bucket Policy to allow CloudFront to access the S3 Bucket content

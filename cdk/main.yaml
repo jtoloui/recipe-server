@@ -1,5 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Master template to orchestrate nested stacks
+Description: |
+  JustCooking Infrastructure, including S3 bucket, CloudFront distribution, and Cognito User Pool with Social Identity Providers.
+  This will also create alias domains using ACM certificates for HTTPS.
+
+  **Note** Before deleting this stack, make sure you turn off the deletion protection for the Cognito User Pool.
 Parameters:
   BucketName:
     Type: String
@@ -12,13 +16,39 @@ Parameters:
     Type: String
     AllowedPattern: "arn:aws:acm:.*"
     Description: ARN of the ACM certificate for HTTPS
+    NoEcho: true
   CloudFrontDomain:
     Type: String
     Description: Domain name to be used as an alias for the CloudFront distribution
+  UserPoolName:
+    Type: String
+    Description: The name of the user pool
+  CallbackURLs:
+    Type: CommaDelimitedList
+    Description: The callback URLs for the user pool client
+    Default: "http://localhost:3000/api/auth/callback"
+  LogoutURLs:
+    Type: CommaDelimitedList
+    Description: The logout URLs for the user pool client
+    Default: "http://localhost:3000/"
+  DomainName:
+    Type: String
+    Description: The domain name for the user pool
+    Default: "idp-dev-justcooking"
+  CustomDomain:
+    Type: String
+    Description: The custom domain for the user pool
+    Default: "idp-dev.justcook.ing"
+  GoogleClientSecret:
+    Type: String
+    Description: The client secret for the Google Identity Provider
+    NoEcho: true
 
 Resources:
   S3BucketStack:
     Type: 'AWS::CloudFormation::Stack'
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
     Properties:
       TemplateURL: 'https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/s3-bucket.yaml'
       Parameters:
@@ -26,14 +56,36 @@ Resources:
         AllowedOrigins: !Join 
           - ','
           - !Ref AllowedOrigins
+
   CloudFrontAndOAIStack:
     Type: 'AWS::CloudFormation::Stack'
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
     Properties:
       TemplateURL: 'https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/cloudfront-and-oai.yaml'
       Parameters:
         S3BucketName: !GetAtt S3BucketStack.Outputs.S3BucketName
         ACMCertificateARN: !Ref ACMCertificateARN
         AliasDomainName: !Ref CloudFrontDomain
+
+  CognitoUserPoolStack:
+    Type: 'AWS::CloudFormation::Stack'
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
+    Properties:
+      TemplateURL: 'https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/cognito-user-pool.yaml'
+      Parameters:
+        UserPoolName: !Ref UserPoolName
+        CallbackURLs: !Join 
+          - ','
+          - !Ref CallbackURLs
+        LogoutURLs: !Join
+          - ','
+          - !Ref LogoutURLs
+        DomainName: !Ref DomainName
+        CustomDomain: !Ref CustomDomain
+        GoogleClientSecret: !Ref GoogleClientSecret
+        ACMCertificateARN: !Ref ACMCertificateARN
 
 Outputs:
   BucketName:

@@ -1,0 +1,177 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cognito UserPool with Social Identity Providers
+
+Parameters:
+  UserPoolName:
+    Type: String
+    Description: The name of the user pool
+  CallbackURLs:
+    Type: CommaDelimitedList
+    Description: The callback URLs for the user pool client
+    Default: "http://localhost:3000/api/auth/callback"
+  LogoutURLs:
+    Type: CommaDelimitedList
+    Description: The logout URLs for the user pool client
+    Default: "http://localhost:3000/"
+  DomainName:
+    Type: String
+    Description: The domain name for the user pool
+    Default: "idp-dev-justcooking"
+  CustomDomain:
+    Type: String
+    Description: The custom domain for the user pool
+    Default: "idp-dev.justcook.ing"
+  GoogleClientSecret:
+    Type: String
+    Description: The client secret for the Google Identity Provider
+    NoEcho: true
+  ACMCertificateARN:
+    Type: String
+    Description: The ARN of the ACM certificate for HTTPS
+    NoEcho: true
+
+Resources:
+  CognitoUserPool:
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Ref UserPoolName
+      DeletionProtection: "ACTIVE"
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+        UnusedAccountValidityDays: 7
+      UsernameConfiguration:
+        CaseSensitive: false
+      Schema:
+        - Name: name
+          Required: true
+          Mutable: true
+        - Name: given_name
+          Required: true
+          Mutable: true
+        - Name: family_name
+          Required: true
+          Mutable: true
+        - Name: email
+          Required: true
+          Mutable: true
+        - Name: zoneinfo
+          Required: true
+          Mutable: true
+        - Name: updated_at
+          Required: true
+          Mutable: true
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate:
+          - email
+      AutoVerifiedAttributes:
+        - email
+      AliasAttributes:
+        - email
+        - preferred_username
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+
+  CognitoUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
+    Properties:
+      Domain: !Ref DomainName
+      UserPoolId: !Ref CognitoUserPool
+
+  CognitoUserPoolCustomDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
+    Properties:
+      Domain: !Ref CustomDomain
+      UserPoolId: !Ref CognitoUserPool
+      CustomDomainConfig:
+        CertificateArn: !Ref ACMCertificateARN
+  
+
+  GoogleIdP:
+    Type: AWS::Cognito::UserPoolIdentityProvider
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
+    Properties:
+      ProviderName: Google
+      ProviderType: Google
+      UserPoolId: !Ref CognitoUserPool
+      ProviderDetails:
+        client_id: "988482523691-99nuaf1bfbboblqactfvk9vda59tsekt.apps.googleusercontent.com"
+        client_secret: !Ref GoogleClientSecret
+        authorize_scopes: profile email openid
+      AttributeMapping:
+        email: email
+        family_name: family_name
+        given_name: given_name
+        name: name
+        zoneinfo: expires_in
+        updated_at: expires_in
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    DeletionPolicy: "Delete"
+    UpdateReplacePolicy: "Retain"
+    DependsOn: 
+      - CognitoUserPoolDomain
+      - CognitoUserPoolCustomDomain
+      - GoogleIdP
+    Properties:
+      ClientName: !Sub ${UserPoolName}-client
+      UserPoolId: !Ref CognitoUserPool
+      AllowedOAuthFlowsUserPoolClient: true
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      GenerateSecret: false
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      RefreshTokenValidity: 1
+      EnableTokenRevocation: true
+      PreventUserExistenceErrors: ENABLED
+      CallbackURLs: !Ref CallbackURLs
+      LogoutURLs: !Ref LogoutURLs
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+        - aws.cognito.signin.user.admin
+      SupportedIdentityProviders:
+        - COGNITO
+        - Google
+
+Outputs:
+  UserPoolId:
+    Value: !Ref CognitoUserPool
+    Description: The ID of the user pool
+  UserPoolClientId:
+    Value: !Ref CognitoUserPoolClient
+    Description: The ID of the user pool client
+  UserPoolDomain:
+    Value: !Ref CognitoUserPoolDomain
+    Description: The domain of the user pool
+  CustomUserPoolDomain:
+    Value: !Ref CognitoUserPoolCustomDomain
+    Description: The custom domain of the user pool, please remember to create a CNAME record in your DNS settings
+  GoogleIdP:
+    Value: !Ref GoogleIdP
+    Description: The Google Identity Provider
