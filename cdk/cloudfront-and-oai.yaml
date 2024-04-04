@@ -65,6 +65,8 @@ Resources:
     Properties:
       DistributionConfig:
         Enabled: true
+        CNAMEs:
+            - !Ref AliasDomainName
         Aliases:
           - !Ref AliasDomainName
         HttpVersion: http2
