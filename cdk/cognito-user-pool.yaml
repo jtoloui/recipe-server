@@ -1,6 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Cognito UserPool with Social Identity Providers
-
 Parameters:
   UserPoolName:
     Type: String
@@ -8,19 +7,19 @@ Parameters:
   CallbackURLs:
     Type: CommaDelimitedList
     Description: The callback URLs for the user pool client
-    Default: "http://localhost:3000/api/auth/callback"
+    Default: http://localhost:3000/api/auth/callback
   LogoutURLs:
     Type: CommaDelimitedList
     Description: The logout URLs for the user pool client
-    Default: "http://localhost:3000/"
+    Default: http://localhost:3000/
   DomainName:
     Type: String
     Description: The domain name for the user pool
-    Default: "idp-dev-justcooking"
+    Default: idp-dev-justcooking
   CustomDomain:
     Type: String
     Description: The custom domain for the user pool
-    Default: "idp-dev.justcook.ing"
+    Default: idp-dev.justcook.ing
   GoogleClientSecret:
     Type: String
     Description: The client secret for the Google Identity Provider
@@ -29,15 +28,28 @@ Parameters:
     Type: String
     Description: The ARN of the ACM certificate for HTTPS
     NoEcho: true
-
+  ResourceNamePrefix:
+    Type: String
+    Description: A prefix for naming all resources for easy identification and grouping.
+  LambdaS3Bucket:
+    Type: String
+    Description: S3 bucket containing the Lambda code.
+  LambdaS3Key:
+    Type: String
+    Description: S3 key for the Lambda code package.
+    Default: function.zip
+  ResendApiKey:
+    Type: String
+    Description: The API key for resending the email
+    NoEcho: true
 Resources:
   CognitoUserPool:
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Type: AWS::Cognito::UserPool
     Properties:
       UserPoolName: !Ref UserPoolName
-      DeletionProtection: "ACTIVE"
+      DeletionProtection: ACTIVE
       AccountRecoverySetting:
         RecoveryMechanisms:
           - Name: verified_email
@@ -81,36 +93,38 @@ Resources:
           RequireNumbers: true
           RequireSymbols: true
           RequireUppercase: true
-
+      LambdaConfig:
+        CustomEmailSender:
+          LambdaArn: !GetAtt LambdaFunction.Arn
+          LambdaVersion: V1_0
+        PostConfirmation: !GetAtt LambdaFunction.Arn
+        KMSKeyID: !GetAtt KMSKey.Arn
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       Domain: !Ref DomainName
       UserPoolId: !Ref CognitoUserPool
-
   CognitoUserPoolCustomDomain:
     Type: AWS::Cognito::UserPoolDomain
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       Domain: !Ref CustomDomain
       UserPoolId: !Ref CognitoUserPool
       CustomDomainConfig:
         CertificateArn: !Ref ACMCertificateARN
-  
-
   GoogleIdP:
     Type: AWS::Cognito::UserPoolIdentityProvider
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       ProviderName: Google
       ProviderType: Google
       UserPoolId: !Ref CognitoUserPool
       ProviderDetails:
-        client_id: "988482523691-99nuaf1bfbboblqactfvk9vda59tsekt.apps.googleusercontent.com"
+        client_id: 988482523691-99nuaf1bfbboblqactfvk9vda59tsekt.apps.googleusercontent.com
         client_secret: !Ref GoogleClientSecret
         authorize_scopes: profile email openid
       AttributeMapping:
@@ -120,12 +134,11 @@ Resources:
         name: name
         zoneinfo: expires_in
         updated_at: expires_in
-
   CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
-    DependsOn: 
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
+    DependsOn:
       - CognitoUserPoolDomain
       - CognitoUserPoolCustomDomain
       - GoogleIdP
@@ -158,7 +171,102 @@ Resources:
       SupportedIdentityProviders:
         - COGNITO
         - Google
-
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ResourceNamePrefix}-lambda-execution-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${ResourceNamePrefix}-lambda-kms-decrypt-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: kms:Decrypt
+                Resource: !GetAtt KMSKey.Arn
+        - PolicyName: !Sub ${ResourceNamePrefix}-lambda-logging-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ResourceNamePrefix}-function:*
+  KMSKey:
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Type: AWS::KMS::Key
+    Properties:
+      Description: !Sub ${ResourceNamePrefix} KMS Key for encrypting data
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: kms:*
+            Resource: '*'
+  KMSKeyAlias:
+    Type: AWS::KMS::Alias
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Properties:
+      AliasName: !Sub alias/${ResourceNamePrefix}-kms
+      TargetKeyId: !Ref KMSKey
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    DependsOn:
+      - KMSKeyAlias
+    Properties:
+      FunctionName: !Sub ${ResourceNamePrefix}-function
+      Handler: index.handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: !Ref LambdaS3Bucket
+        S3Key: !Ref LambdaS3Key
+      Runtime: nodejs20.x
+      PackageType: Zip
+      LoggingConfig:
+        LogFormat: Text
+        LogGroup: !Ref LambdaLogGroup
+      MemorySize: 512
+      Timeout: 30
+      RuntimeManagementConfig:
+        UpdateRuntimeOn: Auto
+      EphemeralStorage:
+        Size: 512
+      Environment:
+        Variables:
+          KEY_ALIAS: !Sub alias/${ResourceNamePrefix}-kms
+          RESEND_API_KEY: !Ref ResendApiKey
+          KEY_ARN: !GetAtt KMSKey.Arn
+      Layers:
+        - arn:aws:lambda:eu-west-2:193408464883:layer:node_crypto:2
+      Architectures:
+        - x86_64
+  LambdaLogGroup:
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ResourceNamePrefix}-function
+      RetentionInDays: 30
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt CognitoUserPool.Arn
 Outputs:
   UserPoolId:
     Value: !Ref CognitoUserPool
@@ -175,3 +283,9 @@ Outputs:
   GoogleIdP:
     Value: !Ref GoogleIdP
     Description: The Google Identity Provider
+  LambdaFunction:
+    Description: ARN of the Lambda function
+    Value: !Ref LambdaFunction
+  KMSKeyArn:
+    Description: ARN of the KMS key
+    Value: !Ref KMSKey

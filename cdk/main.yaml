@@ -43,6 +43,20 @@ Parameters:
     Type: String
     Description: The client secret for the Google Identity Provider
     NoEcho: true
+  LambdaKMSResourceNamePrefix:
+    Type: String
+    Description: A prefix for Lambda and KMS resource names.
+  LambdaS3Bucket:
+    Type: String
+    Description: The S3 bucket for the Lambda code package where the custom email sender is located.
+  UserPoolEmailSenderLambdaS3Key:
+    Type: String
+    Description: S3 key for the Lambda code package for the custom email sender.
+    Default: function.zip
+  ResendApiKey:
+    Type: String
+    Description: The API key for resending the email.
+    NoEcho: true
 
 Resources:
   S3BucketStack:
@@ -86,11 +100,22 @@ Resources:
         CustomDomain: !Ref CustomDomain
         GoogleClientSecret: !Ref GoogleClientSecret
         ACMCertificateARN: !Ref ACMCertificateARN
+        ResourceNamePrefix: !Ref LambdaKMSResourceNamePrefix
+        LambdaS3Bucket: !Ref LambdaS3Bucket
+        LambdaS3Key: !Ref UserPoolEmailSenderLambdaS3Key
+        ResendApiKey: !Ref ResendApiKey
+
 
 Outputs:
-  BucketName:
+  S3BucketStack:
     Value: !GetAtt S3BucketStack.Outputs.S3BucketName
     Description: "Name of the S3 bucket with CORS enabled."
-  CloudFrontDistributionDomainName:
-    Value: !GetAtt CloudFrontAndOAIStack.Outputs.CloudFrontDistributionDomainName
+  CloudFrontAndOAIStack:
+    Value: !GetAtt CloudFrontAndOAIStack.Outputs.CloudFrontDistributionID
     Description: "The domain name of the CloudFront Distribution"
+  CognitoUserPool:
+    Value: !GetAtt CognitoUserPoolStack.Outputs.UserPoolId
+    Description: "The Cognito User Pool"
+  LambdaFunction:
+    Value: !GetAtt CognitoUserPoolStack.Outputs.LambdaFunction
+    Description: "The Lambda function for sending emails"
