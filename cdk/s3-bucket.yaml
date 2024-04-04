@@ -1,8 +1,10 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 Description: S3 bucket with CORS and lifecycle rules
 Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Ref BucketName
       VersioningConfiguration:
@@ -36,8 +38,8 @@ Resources:
       LifecycleConfiguration:
         Rules:
           - Status: Enabled
-            Prefix: "images/"
-            Id: "Delete images after 30 days"
+            Prefix: images/
+            Id: Delete images after 30 days
             NoncurrentVersionExpiration:
               NoncurrentDays: 30
               NewerNoncurrentVersions: 3
@@ -48,13 +50,12 @@ Outputs:
   S3BucketName:
     Value: !Ref S3Bucket
     Description: Name of the sample Amazon S3 bucket with CORS enabled.
-
 Parameters:
   BucketName:
-    Description: "Bucket Name for image upload"
+    Description: Bucket Name for image upload
     Type: String
-    Default: "justcook-bucket-dev"
+    Default: justcook-bucket-dev
   AllowedOrigins:
-    Description: "Allowed origins for CORS"
+    Description: Allowed origins for CORS
     Type: CommaDelimitedList
-    Default: "https://localhost:3000,https://www.justcook.ing"
+    Default: https://localhost:3000,https://www.justcook.ing

@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: |
   JustCooking Infrastructure, including S3 bucket, CloudFront distribution, and Cognito User Pool with Social Identity Providers.
   This will also create alias domains using ACM certificates for HTTPS.
-
   **Note** Before deleting this stack, make sure you turn off the deletion protection for the Cognito User Pool.
 Parameters:
   BucketName:
@@ -11,10 +10,10 @@ Parameters:
   AllowedOrigins:
     Type: CommaDelimitedList
     Description: List of allowed origins for CORS
-    Default: "https://localhost:3000,https://www.justcook.ing"
+    Default: https://localhost:3000,https://www.justcook.ing
   ACMCertificateARN:
     Type: String
-    AllowedPattern: "arn:aws:acm:.*"
+    AllowedPattern: arn:aws:acm:.*
     Description: ARN of the ACM certificate for HTTPS
     NoEcho: true
   CloudFrontDomain:
@@ -26,19 +25,19 @@ Parameters:
   CallbackURLs:
     Type: CommaDelimitedList
     Description: The callback URLs for the user pool client
-    Default: "http://localhost:3000/api/auth/callback"
+    Default: http://localhost:3000/api/auth/callback
   LogoutURLs:
     Type: CommaDelimitedList
     Description: The logout URLs for the user pool client
-    Default: "http://localhost:3000/"
+    Default: http://localhost:3000/
   DomainName:
     Type: String
     Description: The domain name for the user pool
-    Default: "idp-dev-justcooking"
+    Default: idp-dev-justcooking
   CustomDomain:
     Type: String
     Description: The custom domain for the user pool
-    Default: "idp-dev.justcook.ing"
+    Default: idp-dev.justcook.ing
   GoogleClientSecret:
     Type: String
     Description: The client secret for the Google Identity Provider
@@ -57,40 +56,37 @@ Parameters:
     Type: String
     Description: The API key for resending the email.
     NoEcho: true
-
 Resources:
   S3BucketStack:
-    Type: 'AWS::CloudFormation::Stack'
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
-      TemplateURL: 'https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/s3-bucket.yaml'
+      TemplateURL: https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/s3-bucket.yaml
       Parameters:
         BucketName: !Ref BucketName
-        AllowedOrigins: !Join 
+        AllowedOrigins: !Join
           - ','
           - !Ref AllowedOrigins
-
   CloudFrontAndOAIStack:
-    Type: 'AWS::CloudFormation::Stack'
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
-      TemplateURL: 'https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/cloudfront-and-oai.yaml'
+      TemplateURL: https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/cloudfront-and-oai.yaml
       Parameters:
         S3BucketName: !GetAtt S3BucketStack.Outputs.S3BucketName
         ACMCertificateARN: !Ref ACMCertificateARN
         AliasDomainName: !Ref CloudFrontDomain
-
   CognitoUserPoolStack:
-    Type: 'AWS::CloudFormation::Stack'
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
-      TemplateURL: 'https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/cognito-user-pool.yaml'
+      TemplateURL: https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/cognito-user-pool.yaml
       Parameters:
         UserPoolName: !Ref UserPoolName
-        CallbackURLs: !Join 
+        CallbackURLs: !Join
           - ','
           - !Ref CallbackURLs
         LogoutURLs: !Join
@@ -104,18 +100,16 @@ Resources:
         LambdaS3Bucket: !Ref LambdaS3Bucket
         LambdaS3Key: !Ref UserPoolEmailSenderLambdaS3Key
         ResendApiKey: !Ref ResendApiKey
-
-
 Outputs:
   S3BucketStack:
     Value: !GetAtt S3BucketStack.Outputs.S3BucketName
-    Description: "Name of the S3 bucket with CORS enabled."
+    Description: Name of the S3 bucket with CORS enabled.
   CloudFrontAndOAIStack:
     Value: !GetAtt CloudFrontAndOAIStack.Outputs.CloudFrontDistributionID
-    Description: "The domain name of the CloudFront Distribution"
+    Description: The domain name of the CloudFront Distribution
   CognitoUserPool:
     Value: !GetAtt CognitoUserPoolStack.Outputs.UserPoolId
-    Description: "The Cognito User Pool"
+    Description: The Cognito User Pool
   LambdaFunction:
     Value: !GetAtt CognitoUserPoolStack.Outputs.LambdaFunction
-    Description: "The Lambda function for sending emails"
+    Description: The Lambda function for sending emails

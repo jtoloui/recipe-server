@@ -1,6 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: CloudFront Distribution with OAI and ACM Certificate
-
 Parameters:
   S3BucketName:
     Type: String
@@ -12,39 +11,36 @@ Parameters:
   AliasDomainName:
     Type: String
     Description: The domain name to be used as an alias for the CloudFront distribution
-
 Resources:
   CloudFrontOAI:
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
-        Comment: "OAI for accessing S3 bucket content"
-  
+        Comment: OAI for accessing S3 bucket content
   S3BucketPolicy:
     Type: AWS::S3::BucketPolicy
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       Bucket: !Ref S3BucketName
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
-            Sid: "1"
+            Sid: '1'
             Principal:
               CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
             Action: s3:GetObject
-            Resource: !Sub "arn:aws:s3:::${S3BucketName}/*"
-  
+            Resource: !Sub arn:aws:s3:::${S3BucketName}/*
   CloudFrontCacheKeyPolicy:
     Type: AWS::CloudFront::CachePolicy
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       CachePolicyConfig:
-        Comment: "Cache policy for JustCooking"
+        Comment: Cache policy for JustCooking
         DefaultTTL: 86400
         MaxTTL: 31536000
         MinTTL: 0
@@ -62,11 +58,10 @@ Resources:
               - Access-Control-Request-Headers
           QueryStringsConfig:
             QueryStringBehavior: none
-
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
-    DeletionPolicy: "Delete"
-    UpdateReplacePolicy: "Retain"
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Retain
     Properties:
       DistributionConfig:
         Enabled: true
@@ -74,19 +69,19 @@ Resources:
           - !Ref AliasDomainName
         HttpVersion: http2
         Origins:
-          - DomainName: !Sub "${S3BucketName}.s3.amazonaws.com"
+          - DomainName: !Sub ${S3BucketName}.s3.amazonaws.com
             Id: S3Origin
             S3OriginConfig:
-              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOAI}"
+              OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${CloudFrontOAI}
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
           ViewerProtocolPolicy: redirect-to-https
           Compress: true
           CachePolicyId: !Ref CloudFrontCacheKeyPolicy
           AllowedMethods:
-               - 'GET'
-               - 'HEAD'
-               - 'OPTIONS'
+            - GET
+            - HEAD
+            - OPTIONS
           ForwardedValues:
             QueryString: false
             Cookies:
@@ -95,7 +90,6 @@ Resources:
           AcmCertificateArn: !Ref ACMCertificateARN
           SslSupportMethod: sni-only
           MinimumProtocolVersion: TLSv1.2_2021
-
 Outputs:
   CloudFrontDistributionID:
     Value: !Ref CloudFrontDistribution

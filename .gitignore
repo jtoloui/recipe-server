@@ -1,4 +1,4 @@
-.env
+.DS_Store
 /dist
 
 /node_modules
@@ -12,3 +12,4 @@ build
 .build
 
 build-info.json
+.env
