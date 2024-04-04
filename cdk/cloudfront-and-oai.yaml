@@ -66,7 +66,7 @@ Resources:
       DistributionConfig:
         Enabled: true
         CNAMEs:
-            - !Ref AliasDomainName
+          - !Ref AliasDomainName
         Aliases:
           - !Ref AliasDomainName
         HttpVersion: http2
