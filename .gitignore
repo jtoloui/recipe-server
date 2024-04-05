@@ -12,4 +12,7 @@ build
 .build
 
 build-info.json
-.env
+
+.env*
+
+!.env.template

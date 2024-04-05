@@ -4,6 +4,13 @@ Parameters:
   S3BucketName:
     Type: String
     Description: The name of the existing S3 bucket to be used as the origin
+  S3BucketARN:
+    Type: String
+    Description: The ARN of the existing S3 bucket to be used as the origin
+    NoEcho: true
+  S3RegionalDomainName:
+    Type: String
+    Description: The regional domain name of the existing S3 bucket
   ACMCertificateARN:
     Type: String
     Description: The ARN of the ACM certificate for HTTPS
@@ -33,7 +40,7 @@ Resources:
             Principal:
               CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
             Action: s3:GetObject
-            Resource: !Sub arn:aws:s3:::${S3BucketName}/*
+            Resource: !Sub ${S3BucketARN}/*
   CloudFrontCacheKeyPolicy:
     Type: AWS::CloudFront::CachePolicy
     DeletionPolicy: Delete
@@ -65,11 +72,11 @@ Resources:
     Properties:
       DistributionConfig:
         Enabled: true
-        Aliases: 
+        Aliases:
           - !Ref AliasDomainName
         HttpVersion: http2
         Origins:
-          - DomainName: !Sub ${S3BucketName}.s3.amazonaws.com
+          - DomainName: !Ref S3RegionalDomainName
             Id: S3Origin
             S3OriginConfig:
               OriginAccessIdentity: !Sub origin-access-identity/cloudfront/${CloudFrontOAI}

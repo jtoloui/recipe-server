@@ -50,6 +50,12 @@ Outputs:
   S3BucketName:
     Value: !Ref S3Bucket
     Description: Name of the sample Amazon S3 bucket with CORS enabled.
+  S3BucketArn:
+    Value: !GetAtt S3Bucket.Arn
+    Description: ARN of the sample Amazon S3 bucket with CORS enabled.
+  S3RegionalDomainName:
+    Value: !GetAtt S3Bucket.RegionalDomainName
+    Description: URL of the sample Amazon S3 bucket with CORS enabled.
 Parameters:
   BucketName:
     Description: Bucket Name for image upload

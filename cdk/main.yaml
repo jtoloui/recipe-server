@@ -80,6 +80,8 @@ Resources:
       TemplateURL: https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/cloudfront-and-oai.yaml
       Parameters:
         S3BucketName: !GetAtt S3BucketStack.Outputs.S3BucketName
+        S3BucketARN: !GetAtt S3BucketStack.Outputs.S3BucketArn
+        S3RegionalDomainName: !GetAtt S3BucketStack.Outputs.S3RegionalDomainName
         ACMCertificateARN: !Ref ACMCertificateARN
         AliasDomainName: !Ref CloudFrontDomain
   CognitoUserPoolStack:
