@@ -51,7 +51,7 @@ Resources:
         DefaultTTL: 86400
         MaxTTL: 31536000
         MinTTL: 0
-        Name: JustCookingCachePolicy
+        Name: !Sub ${S3BucketName}-CachePolicy
         ParametersInCacheKeyAndForwardedToOrigin:
           EnableAcceptEncodingBrotli: true
           EnableAcceptEncodingGzip: true
