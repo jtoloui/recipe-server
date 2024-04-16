@@ -82,10 +82,16 @@ export class RecipeService implements Recipe {
     const session = await this.tx.startSession();
     try {
       session.startTransaction();
-      let queryConditions: FilterQuery<RecipeType> = {};
+      let queryConditions: FilterQuery<RecipeType> = {
+        $or: [
+          { 'visibility.public': true },
+          { visibility: { $exists: false } }, // Consider documents without the visibility field as public
+        ],
+      };
       if (search) {
         queryConditions = {
-          $or: buildOrQuery<RecipeAttributes>(search, ['name', 'recipeAuthor', 'ingredients.item'], 'i'),
+          ...queryConditions,
+          $and: [{ $or: buildOrQuery<RecipeAttributes>(search, ['name', 'recipeAuthor', 'ingredients.item'], 'i') }],
         };
       }
 
@@ -213,6 +219,7 @@ export class RecipeService implements Recipe {
         description: 1,
         nutrition: 1,
         cuisine: 1,
+        visibility: 1,
       };
       return await this.store.getRecipeById(id, findReturnItems);
     } catch (error) {
@@ -245,7 +252,7 @@ export class RecipeService implements Recipe {
       const validatedReqData = await createRecipeSchema.parseAsync(payloadData);
       const newRecipeData = convertRecipeZodToMongo(validatedReqData, imageSrc);
 
-      const { labels } = newRecipeData;
+      const { labels, visibility } = newRecipeData;
       const capitalizedLabels = labels.map((label) => label.charAt(0).toUpperCase() + label.slice(1));
 
       const newRecipe = await this.store.createRecipe(
@@ -373,10 +380,14 @@ export class RecipeService implements Recipe {
           });
         })
         .catch((error) => {
+          console.log(error);
+
           this.logger.debug(`Error uploading image: ${error}`);
           throw new Error('Error uploading image');
         });
     } catch (error) {
+      console.log(error);
+
       await session.abortTransaction();
 
       if (error instanceof z.ZodError) {

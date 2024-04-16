@@ -33,6 +33,12 @@ interface Image {
   storageName: string;
 }
 
+interface Visibility {
+  public: boolean;
+  private: boolean;
+  groups: string[];
+}
+
 export interface Recipe extends Document, RecipeAttributes {}
 
 export interface RecipeAttributes {
@@ -53,6 +59,7 @@ export interface RecipeAttributes {
   creatorId: string;
   createdAt: Date;
   updatedAt: Date;
+  visibility: Visibility;
 }
 
 export type CreateRecipeModelData = Omit<
@@ -179,6 +186,28 @@ const imageSchema = new Schema<Image>(
   },
 );
 
+const visibilitySchema = new Schema<Visibility>(
+  {
+    public: Boolean,
+    private: Boolean,
+    groups: [String],
+  },
+  {
+    toJSON: {
+      virtuals: false,
+      transform: function (doc, ret) {
+        delete ret._id;
+      },
+    },
+    toObject: {
+      virtuals: false,
+      transform: function (doc, ret) {
+        delete ret._id;
+      },
+    },
+  },
+);
+
 const recipeSchema = new Schema<Recipe>(
   {
     name: { type: String, required: true, index: true },
@@ -201,6 +230,7 @@ const recipeSchema = new Schema<Recipe>(
     steps: { type: [String], required: true },
     cuisine: { type: String, required: true },
     creatorId: { type: String, required: true },
+    visibility: { type: visibilitySchema, required: true, default: { public: true, private: false, groups: [] } },
     createdAt: { type: Date, required: false },
     updatedAt: { type: Date, required: false },
     __v: { type: Number, select: false },

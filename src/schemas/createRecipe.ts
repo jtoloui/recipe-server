@@ -74,6 +74,20 @@ export const createRecipeSchema = z.object({
     }),
   ),
   labels: z.array(z.string().min(1, 'Must have at least one label')),
+  visibility: z.enum(['public', 'private'], {
+    errorMap: (error) => {
+      switch (error.code) {
+        case z.ZodIssueCode.invalid_enum_value:
+          return {
+            message: 'Visibility must be one of public or private',
+          };
+        default:
+          return {
+            message: 'Visibility is required',
+          };
+      }
+    },
+  }),
   portionSize: z
     .number({
       invalid_type_error: 'Portion size must be a number',
@@ -107,5 +121,10 @@ export function convertRecipeZodToMongo(
     vegan: formData.vegan,
     vegetarian: formData.vegetarian,
     cuisine: formData.cuisine,
+    visibility: {
+      public: formData.visibility === 'public',
+      private: formData.visibility === 'private',
+      groups: [],
+    },
   };
 }
