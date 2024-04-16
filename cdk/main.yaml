@@ -60,6 +60,12 @@ Parameters:
     Type: String
     Description: The API key for resending the email.
     NoEcho: true
+  TagNameValue:
+    Type: String
+    Description: The name of the tag
+    Default: JustCooking-{ENV}
+
+
 Resources:
   S3BucketStack:
     Type: AWS::CloudFormation::Stack
@@ -68,10 +74,15 @@ Resources:
     Properties:
       TemplateURL: https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/s3-bucket.yaml
       Parameters:
+        TagNameValue: !Ref TagNameValue
         BucketName: !Ref BucketName
         AllowedOrigins: !Join
           - ','
           - !Ref AllowedOrigins
+      Tags:
+        - Key: Project
+          Value: !Ref TagNameValue
+
   CloudFrontAndOAIStack:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
@@ -79,11 +90,16 @@ Resources:
     Properties:
       TemplateURL: https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/cloudfront-and-oai.yaml
       Parameters:
+        TagNameValue: !Ref TagNameValue
         S3BucketName: !GetAtt S3BucketStack.Outputs.S3BucketName
         S3BucketARN: !GetAtt S3BucketStack.Outputs.S3BucketArn
         S3RegionalDomainName: !GetAtt S3BucketStack.Outputs.S3RegionalDomainName
         ACMCertificateARN: !Ref ACMCertificateARN
         AliasDomainName: !Ref CloudFrontDomain
+      Tags:
+        - Key: Project
+          Value: !Ref TagNameValue
+
   CognitoUserPoolStack:
     Type: AWS::CloudFormation::Stack
     DeletionPolicy: Delete
@@ -91,6 +107,7 @@ Resources:
     Properties:
       TemplateURL: https://justcooking-cloudformation.s3.eu-west-2.amazonaws.com/cognito-user-pool.yaml
       Parameters:
+        TagNameValue: !Ref TagNameValue
         UserPoolName: !Ref UserPoolName
         CallbackURLs: !Join
           - ','
@@ -106,6 +123,10 @@ Resources:
         LambdaS3Bucket: !Ref LambdaS3Bucket
         LambdaS3Key: !Ref UserPoolEmailSenderLambdaS3Key
         ResendApiKey: !Ref ResendApiKey
+      Tags:
+        - Key: Project
+          Value: !Ref TagNameValue
+
 Outputs:
   S3BucketStack:
     Value: !GetAtt S3BucketStack.Outputs.S3BucketName

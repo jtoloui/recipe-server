@@ -1,5 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Cognito UserPool with Social Identity Providers
+
 Parameters:
   UserPoolName:
     Type: String
@@ -42,12 +43,19 @@ Parameters:
     Type: String
     Description: The API key for resending the email
     NoEcho: true
+  TagNameValue:
+    Type: String
+    Description: The name of the tag
+    Default: JustCooking-{ENV}
+
 Resources:
   CognitoUserPool:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     Type: AWS::Cognito::UserPool
     Properties:
+      UserPoolTags:
+        Project: !Ref TagNameValue
       UserPoolName: !Ref UserPoolName
       DeletionProtection: ACTIVE
       AccountRecoverySetting:
@@ -99,6 +107,7 @@ Resources:
           LambdaVersion: V1_0
         PostConfirmation: !GetAtt LambdaFunction.Arn
         KMSKeyID: !GetAtt KMSKey.Arn
+
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     DeletionPolicy: Delete
@@ -106,6 +115,7 @@ Resources:
     Properties:
       Domain: !Ref DomainName
       UserPoolId: !Ref CognitoUserPool
+
   CognitoUserPoolCustomDomain:
     Type: AWS::Cognito::UserPoolDomain
     DeletionPolicy: Delete
@@ -115,6 +125,7 @@ Resources:
       UserPoolId: !Ref CognitoUserPool
       CustomDomainConfig:
         CertificateArn: !Ref ACMCertificateARN
+
   GoogleIdP:
     Type: AWS::Cognito::UserPoolIdentityProvider
     DeletionPolicy: Delete
@@ -134,6 +145,7 @@ Resources:
         name: name
         zoneinfo: expires_in
         updated_at: expires_in
+
   CognitoUserPoolClient:
     Type: AWS::Cognito::UserPoolClient
     DeletionPolicy: Delete
@@ -171,9 +183,13 @@ Resources:
       SupportedIdentityProviders:
         - COGNITO
         - Google
+
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
+      Tags:
+        - Key: Project
+          Value: !Ref TagNameValue
       RoleName: !Sub ${ResourceNamePrefix}-lambda-execution-role
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -200,11 +216,15 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${ResourceNamePrefix}-function:*
+
   KMSKey:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Delete
     Type: AWS::KMS::Key
     Properties:
+      Tags:
+        - Key: Project
+          Value: !Ref TagNameValue
       Description: !Sub ${ResourceNamePrefix} KMS Key for encrypting data
       KeyPolicy:
         Version: '2012-10-17'
@@ -215,6 +235,7 @@ Resources:
               AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
             Action: kms:*
             Resource: '*'
+
   KMSKeyAlias:
     Type: AWS::KMS::Alias
     UpdateReplacePolicy: Retain
@@ -222,11 +243,15 @@ Resources:
     Properties:
       AliasName: !Sub alias/${ResourceNamePrefix}-kms
       TargetKeyId: !Ref KMSKey
+
   LambdaFunction:
     Type: AWS::Lambda::Function
     DependsOn:
       - KMSKeyAlias
     Properties:
+      Tags:
+        - Key: Project
+          Value: !Ref TagNameValue
       FunctionName: !Sub ${ResourceNamePrefix}-function
       Handler: index.handler
       Role: !GetAtt LambdaExecutionRole.Arn
@@ -253,13 +278,18 @@ Resources:
         - arn:aws:lambda:eu-west-2:193408464883:layer:node_crypto:2
       Architectures:
         - x86_64
+
   LambdaLogGroup:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Delete
     Type: AWS::Logs::LogGroup
     Properties:
+      Tags:
+        - Key: Project
+          Value: !Ref TagNameValue
       LogGroupName: !Sub /aws/lambda/${ResourceNamePrefix}-function
       RetentionInDays: 30
+
   LambdaInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -267,6 +297,7 @@ Resources:
       Action: lambda:InvokeFunction
       Principal: cognito-idp.amazonaws.com
       SourceArn: !GetAtt CognitoUserPool.Arn
+
 Outputs:
   UserPoolId:
     Value: !Ref CognitoUserPool

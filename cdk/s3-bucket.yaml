@@ -1,5 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: S3 bucket with CORS and lifecycle rules
+
 Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
@@ -46,6 +47,8 @@ Resources:
       Tags:
         - Key: Name
           Value: !Ref BucketName
+        - Key: Project
+          Value: !Ref TagNameValue
 Outputs:
   S3BucketName:
     Value: !Ref S3Bucket
@@ -56,6 +59,7 @@ Outputs:
   S3RegionalDomainName:
     Value: !GetAtt S3Bucket.RegionalDomainName
     Description: URL of the sample Amazon S3 bucket with CORS enabled.
+
 Parameters:
   BucketName:
     Description: Bucket Name for image upload
@@ -65,3 +69,7 @@ Parameters:
     Description: Allowed origins for CORS
     Type: CommaDelimitedList
     Default: https://localhost:3000,https://www.justcook.ing
+  TagNameValue:
+    Type: String
+    Description: The name of the tag
+    Default: JustCooking-{ENV}

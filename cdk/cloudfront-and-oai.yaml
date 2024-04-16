@@ -18,6 +18,11 @@ Parameters:
   AliasDomainName:
     Type: String
     Description: The domain name to be used as an alias for the CloudFront distribution
+  TagNameValue:
+    Type: String
+    Description: The name of the tag
+    Default: JustCooking-{ENV}
+
 Resources:
   CloudFrontOAI:
     DeletionPolicy: Delete
@@ -26,6 +31,7 @@ Resources:
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: OAI for accessing S3 bucket content
+
   S3BucketPolicy:
     Type: AWS::S3::BucketPolicy
     DeletionPolicy: Delete
@@ -41,6 +47,7 @@ Resources:
               CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
             Action: s3:GetObject
             Resource: !Sub ${S3BucketARN}/*
+
   CloudFrontCacheKeyPolicy:
     Type: AWS::CloudFront::CachePolicy
     DeletionPolicy: Delete
@@ -65,11 +72,15 @@ Resources:
               - Access-Control-Request-Headers
           QueryStringsConfig:
             QueryStringBehavior: none
+
   CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     DeletionPolicy: Delete
     UpdateReplacePolicy: Retain
     Properties:
+      Tags:
+        - Key: Project
+          Value: !Ref TagNameValue
       DistributionConfig:
         Enabled: true
         Aliases:
@@ -97,6 +108,7 @@ Resources:
           AcmCertificateArn: !Ref ACMCertificateARN
           SslSupportMethod: sni-only
           MinimumProtocolVersion: TLSv1.2_2021
+
 Outputs:
   CloudFrontDistributionID:
     Value: !Ref CloudFrontDistribution
