@@ -252,7 +252,7 @@ export class RecipeService implements Recipe {
       const validatedReqData = await createRecipeSchema.parseAsync(payloadData);
       const newRecipeData = convertRecipeZodToMongo(validatedReqData, imageSrc);
 
-      const { labels, visibility } = newRecipeData;
+      const { labels } = newRecipeData;
       const capitalizedLabels = labels.map((label) => label.charAt(0).toUpperCase() + label.slice(1));
 
       const newRecipe = await this.store.createRecipe(
