@@ -8,7 +8,7 @@
   },
   "scripts": {
     "prebuild": "TZ=UTC bun ./scripts/prebuild.js",
-    "prebuild:bun": "TZ=UTC bun ./scripts/prebuild.js",
+    "prebuild:bun": "TZ=UTC bun ./scripts/prebuild-bun.js",
     "build": "TZ=UTC tsc && tsc-alias",
     "build:bun": "NODE_ENV=production TZ=UTC bun ./build.ts",
     "start": "TZ=UTC bun dist/index.js",
