@@ -4,12 +4,12 @@
   "description": "",
   "main": "index.js",
   "engines": {
-    "node": "21.x"
+    "node": "20.x"
   },
   "scripts": {
-    "prebuild": "TZ=UTC node ./scripts/prebuild.js",
+    "prebuild": "TZ=UTC bun ./scripts/prebuild.js",
     "build": "TZ=UTC tsc && tsc-alias",
-    "start": "TZ=UTC node dist/index.js",
+    "start": "TZ=UTC bun dist/index.js",
     "dev": "TZ=UTC ts-node -r tsconfig-paths/register index.ts",
     "watch": "nodemon --watch src --exec TZ=UTC ts-node index.ts",
     "dev:bun": "bun --hot run index.ts",
