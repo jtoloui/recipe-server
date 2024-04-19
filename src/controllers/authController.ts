@@ -2,7 +2,11 @@ import {
   CognitoIdentityProvider as CognitoIdentityServiceProvider,
   ConfirmForgotPasswordCommand,
   ForgotPasswordCommand,
+  AddCustomAttributesCommand,
+  UpdateUserAttributesCommand,
   ListUsersRequest,
+  GlobalSignOutCommand,
+  AdminUpdateUserAttributesCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import {
   AuthenticationDetails,
@@ -206,6 +210,9 @@ export class AuthController implements Auth {
     };
 
     const cognitoUser = new CognitoUser(userData);
+    console.log(req.session.user?.tokens.AccessToken);
+
+    const client = this.client;
 
     cognitoUser.authenticateUser(authenticationDetails, {
       onSuccess: function (result) {
@@ -226,6 +233,26 @@ export class AuthController implements Auth {
           },
           userGroups,
         };
+
+        // const a = new UpdateUserAttributesCommand({
+        //   UserAttributes: [
+        //     {
+        //       Name: 'email',
+        //       Value: 'jetoloui@gmail.com',
+        //     },
+        //   ],
+        //   AccessToken: result.getAccessToken().getJwtToken(),
+        // });
+
+        // client
+        //   .send(a)
+        //   .then((res) => {
+        //     console.log(res);
+        //   })
+        //   .catch((err) => {
+        //     console.error(err);
+        //     throw err;
+        //   });
 
         // Set the name of the cookie to 'myAppName_AccessToken'
         res.cookie('app_session', accessToken, {
@@ -411,32 +438,67 @@ export class AuthController implements Auth {
       Pool: userPool,
     });
 
-    cognitoUser.setSignInUserSession(
-      new CognitoUserSession({
-        IdToken: new CognitoIdToken({ IdToken }),
-        AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
-        RefreshToken: new CognitoRefreshToken({ RefreshToken }),
-      })
-    );
+    // cognitoUser.setSignInUserSession(
+    //   new CognitoUserSession({
+    //     IdToken: new CognitoIdToken({ IdToken }),
+    //     AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
+    //     RefreshToken: new CognitoRefreshToken({ RefreshToken }),
+    //   }),
+    // );
 
-    cognitoUser.globalSignOut({
-      onSuccess: (mes) => {
-        req.session.destroy((err) => {
-          if (err) {
+    const signout = new GlobalSignOutCommand({
+      AccessToken: AccessToken,
+    });
+
+    const a = new AdminUpdateUserAttributesCommand({
+      UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
+      Username: username,
+      UserAttributes: [
+        {
+          Name: 'email',
+          Value: 'jetoloui+1@gmail.com',
+        },
+      ],
+    });
+
+    this.client
+      .send(a)
+      .then((ress) => {
+        this.client
+          .send(signout)
+          .then((data) => {
+            res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
+            return this.response.sendSuccess(res, 'Logged out successfully');
+          })
+          .catch((err) => {
             this.logger.error('(Cognito) Error logging out:', err);
 
-            return this.response.sendErrorNonJSON(res, 500, 'Error logging out');
-          }
-        });
-        res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
-        return this.response.sendSuccessNonJSON(res, 'Logged out successfully');
-      },
-      onFailure: (err) => {
-        this.logger.error('(Cognito) Error logging out:', err);
+            return this.response.sendError(res, 500, 'Error logging out', err);
+          });
+      })
+      .catch((err) => {
+        console.error(err);
+        throw err;
+      });
 
-        return this.response.sendErrorNonJSON(res, 500, 'Error logging out');
-      },
-    });
+    // cognitoUser.globalSignOut({
+    //   onSuccess: (mes) => {
+    //     req.session.destroy((err) => {
+    //       if (err) {
+    //         this.logger.error('(Cognito) Error logging out:', err);
+
+    //         return this.response.sendErrorNonJSON(res, 500, 'Error logging out');
+    //       }
+    //     });
+    //     res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
+    //     return this.response.sendSuccessNonJSON(res, 'Logged out successfully');
+    //   },
+    //   onFailure: (err) => {
+    //     this.logger.error('(Cognito) Error logging out:', err);
+
+    //     return this.response.sendErrorNonJSON(res, 500, 'Error logging out');
+    //   },
+    // });
   };
 
   signUp = async (req: Request<unknown, unknown, signUpBody>, res: Response) => {
@@ -450,21 +512,21 @@ export class AuthController implements Auth {
       new CognitoUserAttribute({
         Name: 'updated_at',
         Value: new Date().getTime().toString(),
-      })
+      }),
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'name',
         Value: `${given_name} ${family_name}`,
-      })
+      }),
     );
 
     userAttributes.push(
       new CognitoUserAttribute({
         Name: 'zoneinfo',
         Value: 'Europe/London',
-      })
+      }),
     );
 
     try {
@@ -591,7 +653,7 @@ export class AuthController implements Auth {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-        }
+        },
       );
 
       const { id_token, access_token, refresh_token } = response.data;
