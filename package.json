@@ -8,8 +8,11 @@
   },
   "scripts": {
     "prebuild": "TZ=UTC bun ./scripts/prebuild.js",
+    "prebuild:bun": "TZ=UTC bun ./scripts/prebuild.js",
     "build": "TZ=UTC tsc && tsc-alias",
+    "build:bun": "NODE_ENV=production TZ=UTC bun ./build.ts",
     "start": "TZ=UTC bun dist/index.js",
+    "start:bun": "TZ=UTC bun out/index.js",
     "dev": "TZ=UTC ts-node -r tsconfig-paths/register index.ts",
     "watch": "nodemon --watch src --exec TZ=UTC ts-node index.ts",
     "dev:bun": "bun --hot run index.ts",
@@ -45,6 +48,7 @@
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.1.1",
+    "@types/bun": "^1.1.0",
     "@types/cookie-parser": "^1.4.3",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",

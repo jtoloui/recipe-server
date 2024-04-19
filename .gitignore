@@ -16,3 +16,5 @@ build-info.json
 .env*
 
 !.env.template
+
+out/

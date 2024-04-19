@@ -65,7 +65,7 @@ app.use(
     store: store,
     resave: false,
     saveUninitialized: false,
-  })
+  }),
 );
 
 app.use(assignId);
@@ -88,7 +88,7 @@ app.use(
       `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${
         req.sessionID
       } - HTTP (Outbound) ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
-  })
+  }),
 );
 // Middleware to log HTTP Inbound requests
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -96,7 +96,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   logger.info(
     `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${
       req.sessionID
-    } - HTTP (Inbound) ${req.method} ${req.url}`
+    } - HTTP (Inbound) ${req.method} ${req.url}`,
   );
   next();
 });
