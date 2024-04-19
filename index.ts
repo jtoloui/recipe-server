@@ -84,20 +84,36 @@ app.use(
       }
       return level;
     },
-    msg: (req, res) =>
-      `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${
-        req.sessionID
-      } - HTTP (Outbound) ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage}`,
+    // msg: (req, res) => {
+    //   // res.on('finish', () => {});
+    //   return `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${
+    //     req.sessionID
+    //   } - HTTP (Outbound) ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage} - ${res.responseTime}}ms`;
+    // },
   }),
 );
 // Middleware to log HTTP Inbound requests
 app.use((req: Request, res: Response, next: NextFunction) => {
   const logger = config.newLogger(logLevel, 'Routes');
+  const start = process.hrtime();
+  const calculateResponseTime = () => {
+    const diff = process.hrtime(start);
+    return (diff[0] * 1e3 + diff[1] * 1e-6).toFixed(3); // Convert to milliseconds with three decimal places
+  };
+
   logger.info(
     `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${
       req.sessionID
     } - HTTP (Inbound) ${req.method} ${req.url}`,
   );
+
+  res.on('finish', () => {
+    logger.info(
+      `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${
+        req.sessionID
+      } - HTTP (Inbound) ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage} - ${calculateResponseTime()}ms`,
+    );
+  });
   next();
 });
 // Routes
