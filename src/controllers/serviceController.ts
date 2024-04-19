@@ -26,8 +26,8 @@ export class ServiceController implements Service {
 
   getHealth = async (req: Request, res: Response) => {
     try {
-      const projectRoot = path.resolve(__dirname, '../../out');
-      console.log('projectRoot', projectRoot);
+      const projectPath = process.env.NODE_ENV === 'production' ? 'out' : '';
+      const projectRoot = path.resolve(__dirname, `../../${projectPath}`);
 
       const buildInfoString = fs.readFileSync(path.resolve(projectRoot, 'build-info.json'), 'utf8');
 
