@@ -111,7 +111,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     logger.info(
       `UserId: ${req.session?.user?.sub || 'N/A'} - Request ID: ${req.id} - Session ID: ${
         req.sessionID
-      } - HTTP (Inbound) ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage} - ${calculateResponseTime()}ms`,
+      } - HTTP (Outbound) ${req.method} ${req.url} - Status: ${res.statusCode} - ${res.statusMessage} - ${calculateResponseTime()}ms`,
     );
   });
   next();
