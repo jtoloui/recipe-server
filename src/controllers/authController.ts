@@ -108,6 +108,9 @@ export class AuthController implements Auth {
   }
 
   deleteUser = async (req: Request<unknown, unknown, deleteUserBody>, res: Response) => {
+    // Not implemented. Previously an empty body that never sent a response,
+    // hanging the connection. Respond 501 until the delete flow is built.
+    return res.status(501).json({ message: 'Not implemented' });
   };
 
   getAllUsers = async (req: Request, res: Response) => {
