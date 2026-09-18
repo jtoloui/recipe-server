@@ -2,6 +2,14 @@ import { FilterQuery, PipelineStage } from 'mongoose';
 
 import { Recipe } from '@/models/recipe';
 
+/**
+ * A measurement is considered "popular" once it appears in more than this many
+ * recipes. Extracted from a bare `> 4` magic number (RECON-FINDINGS D6); tune
+ * here rather than inline. Note: on a small dataset a high threshold yields an
+ * empty result, which is expected.
+ */
+export const POPULAR_MEASUREMENT_MIN_COUNT = 4;
+
 export const groupRecipesByLabel: PipelineStage[] = [
   {
     $facet: {
@@ -67,65 +75,6 @@ export const getMeasurementsType = [
   { $unwind: '$ingredients' },
   { $unwind: '$ingredients.measurement' },
   { $group: { _id: '$ingredients.measurement', count: { $sum: 1 } } },
-  { $match: { count: { $gt: 4 } } },
+  { $match: { count: { $gt: POPULAR_MEASUREMENT_MIN_COUNT } } },
   { $group: { _id: null, measurements: { $push: '$_id' } } },
-];
-
-export const getPopularLabelsAggregate = [
-  {
-    $unwind: '$labels',
-  },
-  {
-    $group: {
-      _id: {
-        $toLower: '$labels',
-      },
-      count: {
-        $sum: 1,
-      },
-    },
-  },
-  {
-    $sort: {
-      count: -1,
-    },
-  },
-  {
-    $limit: 10,
-  },
-  {
-    $addFields: {
-      capitalizedLabel: {
-        $concat: [
-          {
-            $toUpper: {
-              $substrCP: ['$_id', 0, 1],
-            },
-          },
-          {
-            $substrCP: [
-              '$_id',
-              1,
-              {
-                $subtract: [
-                  {
-                    $strLenCP: '$_id',
-                  },
-                  1,
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    },
-  },
-  {
-    $group: {
-      _id: null,
-      labels: {
-        $push: '$capitalizedLabel',
-      },
-    },
-  },
 ];
