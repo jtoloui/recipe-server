@@ -13,7 +13,7 @@ import {
   createRecipeSchema,
 } from '@/schemas/index';
 import { RecipeStore } from '@/store/recipeStore';
-import { buildOrQuery } from '@/store/utils/queryBuilder';
+import { buildOrQuery, escapeRegex } from '@/store/utils/queryBuilder';
 import { User } from '@/types/common/user';
 import { configWithAWS, configWithLogger } from '@/types/controller/controller';
 import { ServiceError } from '@/utils/errors';
@@ -79,9 +79,8 @@ export class RecipeService implements Recipe {
     search?: string,
     label?: string,
   ): Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'>> {
-    const session = await this.tx.startSession();
     try {
-      session.startTransaction();
+      // Reads need no transaction (was a no-op, un-awaited, replica-set-only wrapper). D2.
       let queryConditions: FilterQuery<RecipeType> = {
         $or: [
           { 'visibility.public': true },
@@ -96,7 +95,7 @@ export class RecipeService implements Recipe {
       }
 
       if (label && label.toLocaleLowerCase() !== 'all') {
-        queryConditions.labels = { $regex: new RegExp(`^${label}$`, 'i') };
+        queryConditions.labels = { $regex: new RegExp(`^${escapeRegex(label)}$`, 'i') };
       }
 
       const matchingLabelsCondition = {
@@ -114,8 +113,6 @@ export class RecipeService implements Recipe {
 
       const allLabels = await this.store.getLabelFromQuery(queryConditions, false);
 
-      session.commitTransaction();
-
       const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'> = {
         recipes: recipeQueryResults,
         labels: labelsFromQueryResults[0],
@@ -124,13 +121,10 @@ export class RecipeService implements Recipe {
       return response;
     } catch (error) {
       this.logger.error(`Error retrieving recipes: ${error}`);
-      session.abortTransaction();
       throw new ServiceError(RecipeServiceErrors, {
         status: 500,
         message: 'Error retrieving recipes',
       });
-    } finally {
-      await session.endSession();
     }
   }
 
@@ -139,9 +133,8 @@ export class RecipeService implements Recipe {
     search?: string,
     label?: string,
   ): Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'>> {
-    const session = await this.tx.startSession();
     try {
-      session.startTransaction();
+      // Reads need no transaction (was a no-op, un-awaited, replica-set-only wrapper). D2.
       const defaultConditions: FilterQuery<RecipeType> = { creatorId: user.sub };
       let queryConditions: FilterQuery<RecipeType> = defaultConditions;
       if (search) {
@@ -154,7 +147,7 @@ export class RecipeService implements Recipe {
       }
 
       if (label && label.toLocaleLowerCase() !== 'all') {
-        queryConditions.labels = { $regex: new RegExp(`^${label}$`, 'i') };
+        queryConditions.labels = { $regex: new RegExp(`^${escapeRegex(label)}$`, 'i') };
       }
 
       const matchingLabelsCondition = {
@@ -179,8 +172,6 @@ export class RecipeService implements Recipe {
       // Get all labels for the user
       const allLabels = await this.store.getLabelFromQuery(matchLabelsForUserAllRecipes, true);
 
-      session.commitTransaction();
-
       const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'> = {
         recipes: recipeQueryResults,
         labels: labelsFromQueryResults[0],
@@ -189,13 +180,10 @@ export class RecipeService implements Recipe {
       return response;
     } catch (error) {
       this.logger.error(`Error retrieving recipes: ${error}`);
-      session.abortTransaction();
       throw new ServiceError(RecipeServiceErrors, {
         status: 500,
         message: 'Error retrieving recipes',
       });
-    } finally {
-      await session.endSession();
     }
   }
 
@@ -380,13 +368,13 @@ export class RecipeService implements Recipe {
           });
         })
         .catch((error) => {
-          console.log(error);
+          this.logger.error(`Error creating recipe: ${error}`);
 
           this.logger.debug(`Error uploading image: ${error}`);
           throw new Error('Error uploading image');
         });
     } catch (error) {
-      console.log(error);
+      this.logger.error(`Error updating recipe: ${error}`);
 
       await session.abortTransaction();
 
