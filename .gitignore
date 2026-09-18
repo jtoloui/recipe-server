@@ -18,3 +18,5 @@ build-info.json
 !.env.template
 
 out/
+coverage/
+.mongodb-binaries/
