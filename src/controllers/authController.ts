@@ -77,32 +77,6 @@ type resendVerificationCodeBody = {
   username: string;
 };
 
-// const winstonLogger = logger('info', 'Auth Controller');
-
-// const client = new CognitoIdentityServiceProvider({
-//   region: process.env.AWS_COGNITO_REGION,
-//   credentials: {
-//     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-//     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-//   },
-// });
-
-// const addUserToUserGroup = async (username: string) => {
-//   const params = {
-//     Username: username,
-//     UserPoolId: poolData.UserPoolId,
-//     GroupName: 'Users',
-//   };
-
-//   try {
-//     await client.adminAddUserToGroup(params);
-//     winstonLogger.info(`User ${username} added to group: "User".`);
-//   } catch (error) {
-//     winstonLogger.error(`Error adding user ${username} to group: "User".`);
-//     throw error;
-//   }
-// };
-
 interface Auth {
   login: (req: Request<unknown, unknown, loginBody>, res: Response) => void;
   loginSocial: (req: Request<loginSocialQuery>, res: Response) => void;
@@ -134,20 +108,6 @@ export class AuthController implements Auth {
   }
 
   deleteUser = async (req: Request<unknown, unknown, deleteUserBody>, res: Response) => {
-    // try {
-    //   const { id } = req.body;
-    //   const user = await managementClient.getUser({ id });
-    //   const deleted = await managementClient.deleteUser({
-    //     id: user.user_id ?? '',
-    //   });
-    //   return res.status(200).json({ message: 'User deleted', deleted });
-    // } catch (error) {
-    //   this.logger.error('Error deleting user:', error);
-    //   return res.status(500).json({
-    //     message: 'Error deleting user',
-    //     error: error,
-    //   });
-    // }
   };
 
   getAllUsers = async (req: Request, res: Response) => {
@@ -227,7 +187,6 @@ export class AuthController implements Auth {
           userGroups,
         };
 
-        // Set the name of the cookie to 'myAppName_AccessToken'
         res.cookie('app_session', accessToken, {
           httpOnly: true,
           secure: true, // Uncomment this line if you are using HTTPS
@@ -274,103 +233,6 @@ export class AuthController implements Auth {
       return this.response.sendError(res, 500, 'Error logging in with social', error);
     }
   };
-
-  // TODO: Fix this as logout isn't working
-  // logout = async (req: Request, res: Response) => {
-  //   const { user } = req.session;
-
-  //   if (!user) {
-  //     return res.status(401).json({ message: 'Not logged in' });
-  //   }
-
-  //   const {
-  //     username,
-  //     tokens: { IdToken, AccessToken, RefreshToken },
-  //   } = user;
-
-  //   const client = new CognitoIdentityServiceProvider({
-  //     region: process.env.AWS_COGNITO_REGION,
-  //   });
-  //   client.adminUserGlobalSignOut(
-  //     {
-  //       UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
-  //       Username: username,
-  //     },
-  //     (err, data) => {
-  //       if (err) {
-  //         console.error(err);
-  //         return res.status(500).json({ message: 'Error logging out', err });
-  //       }
-  //       client.adminGetUser(
-  //         {
-  //           UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
-  //           Username: username,
-  //         },
-  //         (err, data) => {
-  //           if (err) {
-  //             console.error(err);
-  //             return res
-  //               .status(500)
-  //               .json({ message: 'Error logging out', err });
-  //           }
-  //           console.log('user info', data);
-  //           return res.status(200).json({ message: 'User logged out' });
-  //         }
-  //       );
-  //       req.session.destroy((err) => {
-  //         if (err) {
-  //           console.error(err);
-  //           return res.status(500).json({ message: 'Error logging out', err });
-  //         }
-  //       });
-  //       res.clearCookie('app_session');
-  //       console.log(data);
-  //       return res.status(200).json({ message: 'User logged out' });
-  //     }
-  //   );
-
-  //   client.adminGetUser(
-  //     {
-  //       UserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
-  //       Username: username,
-  //     },
-  //     (err, data) => {
-  //       if (err) {
-  //         console.error(err);
-  //         return res.status(500).json({ message: 'Error logging out', err });
-  //       }
-  //       console.log(data);
-  //       return res.status(200).json({ message: 'User logged out' });
-  //     }
-  //   );
-
-  //   const cognitoUser = new CognitoUser({
-  //     Username: username,
-  //     Pool: userPool,
-  //   });
-
-  //   cognitoUser.setSignInUserSession(
-  //     new CognitoUserSession({
-  //       IdToken: new CognitoIdToken({ IdToken }),
-  //       AccessToken: new CognitoAccessToken({ AccessToken: AccessToken }),
-  //       RefreshToken: new CognitoRefreshToken({ RefreshToken }),
-  //     })
-  //   );
-
-  //   // console.log(cognitoUser);
-
-  //   cognitoUser.globalSignOut({
-  //     onSuccess: function (msg) {
-  //       console.log(msg);
-
-  //       console.log('User logged out successfully');
-  //     },
-  //     onFailure: function (err) {
-  //       console.error('Error while logging out:', err);
-  //     },
-  //   });
-  //   res.status(200).json({ message: 'User logged out' });
-  // };
 
   logout = async (req: Request, res: Response) => {
     const { user } = req.session;
@@ -567,7 +429,6 @@ export class AuthController implements Auth {
     }
 
     if (!code) {
-      // If there's no code, handle the error
       this.logger.error('Authentication failed');
       res.status(400).send('Authentication failed');
       return;
@@ -628,8 +489,6 @@ export class AuthController implements Auth {
         },
       };
 
-      // At this point, the application should store these tokens securely and use them for subsequent API requests.
-      // return res.status(200).json({ id_token, access_token, refresh_token });
       res.cookie('app_session', access_token, {
         httpOnly: true,
         secure: true,
@@ -719,12 +578,10 @@ export class AuthController implements Auth {
         return true;
       }
       const dateNow = new Date();
-      // Convert expiration time from seconds to milliseconds
       const tokenExpirationDate = new Date((decodedToken.exp || 0) * 1000);
 
       return tokenExpirationDate < dateNow;
     } catch (err) {
-      // If token can't be decoded, consider it as expired
       return true;
     }
   };
