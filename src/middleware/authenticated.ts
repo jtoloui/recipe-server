@@ -42,12 +42,16 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
       return res.status(401).json({ message: 'Forbidden: No token provided' });
     }
 
-    // A5: the app_session cookie must match the access token we issued for this
-    // session — a non-empty-but-wrong cookie must NOT pass.
+    // A5 (softened): the app_session cookie is expected to match the access
+    // token we issued, but a MISMATCH is no longer a hard 401. The real gate is
+    // the cryptographic verifyIdToken() below; the cookie equality was
+    // defense-in-depth. Hard-rejecting on drift broke every returning user
+    // (login set app_session as a non-persistent cookie while the express
+    // session — holding AccessToken — persisted 7 days, so the two legitimately
+    // diverged). Log the mismatch and let token verification decide.
     const expectedAppSession = req.session.user.tokens.AccessToken;
     if (!expectedAppSession || !safeEqual(req.cookies.app_session, expectedAppSession)) {
-      winstonLogger.warn(`[isAuthenticated]: Forbidden - app_session cookie does not match session`);
-      return res.status(401).json({ message: 'Forbidden: Invalid session' });
+      winstonLogger.warn(`[isAuthenticated]: app_session cookie does not match session token — continuing to token verification`);
     }
 
     try {

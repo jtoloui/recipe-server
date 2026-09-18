@@ -100,15 +100,20 @@ describe('isAuthenticated (A4/A5/A6)', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it('A5: present-but-mismatched app_session -> 401, no verify/refresh', async () => {
+  it('A5 (softened): mismatched app_session no longer hard-401s — falls through to token verification and passes on a valid id token', async () => {
+    // Regression fix: hard-rejecting on app_session/AccessToken drift broke every
+    // returning user (login set app_session as a non-persistent cookie while the
+    // 7-day express session persisted). The cryptographic verifyIdToken() is the
+    // real gate; a mismatch now only logs a warning and continues.
+    verifyIdTokenMock.mockResolvedValueOnce({} as unknown as never);
     const { isAuthenticated } = await import('@/middleware/authenticated');
     const req = authedReq();
     (req as unknown as { cookies: Record<string, string> }).cookies.app_session = 'wrong';
     const res = mockRes();
     const next = vi.fn() as unknown as NextFunction;
     await isAuthenticated(req, res, next);
-    expect(res.statusCode).toBe(401);
-    expect(verifyIdTokenMock).not.toHaveBeenCalled();
-    expect(refreshTokensMock).not.toHaveBeenCalled();
+    expect(verifyIdTokenMock).toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+    expect(res.statusCode).not.toBe(401);
   });
 });

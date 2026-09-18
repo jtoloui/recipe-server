@@ -194,6 +194,11 @@ export class AuthController implements Auth {
           httpOnly: true,
           secure: true, // Uncomment this line if you are using HTTPS
           domain: `.${process.env.COOKIE_DOMAIN}`,
+          // Persist alongside the 7-day express session (index.ts). Without a
+          // maxAge the cookie was session-scoped and dropped on browser close,
+          // while connect.sid survived 7 days -> returning users hit the A5
+          // mismatch / "No token provided" 401. Keep lifetimes in sync.
+          maxAge: 1000 * 60 * 60 * 24 * 7,
         });
 
         return res.status(200).json({
