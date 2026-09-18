@@ -75,5 +75,12 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"
+  },
+  "overrides": {
+    "elliptic": ">=6.6.1",
+    "fast-xml-parser": ">=5.11.1",
+    "shell-quote": ">=1.10.0",
+    "lodash": ">=4.17.24",
+    "jws": ">=3.2.3"
   }
 }
