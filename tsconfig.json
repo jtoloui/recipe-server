@@ -20,9 +20,8 @@
     "strict": true,                                      /* Enable all strict type-checking options. */
     /* Completeness */
     "skipLibCheck": true,                                 /* Skip type checking all .d.ts files. */
-    "baseUrl": ".",                                     /* Base directory to resolve non-absolute module names. */
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": ["./src/*"],
     }
   },
   "include": ["src/**/*.ts", "index.ts", "custom.d.ts", "types/**/*.ts", "./build-info.json"],
