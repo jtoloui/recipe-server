@@ -29,6 +29,7 @@
     "@aws-sdk/client-s3": "^3.540.0",
     "@types/mongoose": "^5.11.97",
     "amazon-cognito-identity-js": "^6.2.0",
+    "aws-jwt-verify": "^5.2.1",
     "axios": "^1.4.0",
     "body-parser": "^1.20.2",
     "connect-mongo": "^5.1.0",
