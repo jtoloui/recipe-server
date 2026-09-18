@@ -78,9 +78,9 @@
   },
   "overrides": {
     "elliptic": ">=6.6.1",
-    "fast-xml-parser": ">=5.11.1",
+    "fast-xml-parser": ">=4.4.1 <5",
     "shell-quote": ">=1.10.0",
-    "lodash": ">=4.17.24",
-    "jws": ">=3.2.3"
+    "lodash": ">=4.17.21",
+    "jws": ">=3.2.3 <4"
   }
 }
