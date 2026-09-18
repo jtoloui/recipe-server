@@ -108,10 +108,12 @@ export class RecipeService implements Recipe {
       }
 
       const fields = assertFields(['name', 'labels', 'image', 'ingredients', 'timeToCook']);
-      const recipeQueryResults = await this.store.getAllRecipes(queryConditions, fields);
-      const labelsFromQueryResults = await this.store.getLabelFromQuery(matchingLabelsCondition, !!search);
-
-      const allLabels = await this.store.getLabelFromQuery(queryConditions, false);
+      // Independent reads — run in parallel instead of three sequential round-trips (D3).
+      const [recipeQueryResults, labelsFromQueryResults, allLabels] = await Promise.all([
+        this.store.getAllRecipes(queryConditions, fields),
+        this.store.getLabelFromQuery(matchingLabelsCondition, !!search),
+        this.store.getLabelFromQuery(queryConditions, false),
+      ]);
 
       const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'> = {
         recipes: recipeQueryResults,
@@ -165,12 +167,14 @@ export class RecipeService implements Recipe {
 
       const fields = assertFields(['name', 'labels', 'image', 'ingredients', 'timeToCook']);
 
-      const recipeQueryResults = await this.store.getAllRecipes(queryConditions, fields);
-      // Get all labels for the user with the search query regardless if search is passed in
-      const labelsFromQueryResults = await this.store.getLabelFromQuery(matchingLabelsCondition, true);
-
-      // Get all labels for the user
-      const allLabels = await this.store.getLabelFromQuery(matchLabelsForUserAllRecipes, true);
+      // Independent reads — run in parallel instead of three sequential round-trips (D3).
+      const [recipeQueryResults, labelsFromQueryResults, allLabels] = await Promise.all([
+        this.store.getAllRecipes(queryConditions, fields),
+        // labels for the user, scoped by the search query
+        this.store.getLabelFromQuery(matchingLabelsCondition, true),
+        // all labels for the user
+        this.store.getLabelFromQuery(matchLabelsForUserAllRecipes, true),
+      ]);
 
       const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'> = {
         recipes: recipeQueryResults,
