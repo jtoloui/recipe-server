@@ -38,7 +38,7 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
     // session — a non-empty-but-wrong cookie must NOT pass.
     const expectedAppSession = req.session.user.tokens.AccessToken;
     if (!expectedAppSession || !safeEqual(req.cookies.app_session, expectedAppSession)) {
-      winstonLogger.error(`[isAuthenticated]: Forbidden - app_session cookie does not match session`);
+      winstonLogger.warn(`[isAuthenticated]: Forbidden - app_session cookie does not match session`);
       return res.status(401).json({ message: 'Forbidden: Invalid session' });
     }
 
