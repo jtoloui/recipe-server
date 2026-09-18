@@ -26,6 +26,11 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
     const sessionToken = req.session.user.tokens.IdToken;
 
     try {
+      // Note: this verifies the ID token (signature, issuer, audience, expiry,
+      // token-use) but does NOT call adminGetUser to check user.Enabled — a
+      // disabled Cognito user retains access until their ID token expires
+      // (max ~1h). Accepted tradeoff to drop a per-request admin API call;
+      // revisit if immediate disable-on-demand is required.
       await verifyIdToken(sessionToken);
     } catch (verifyError) {
       winstonLogger.error(`[isAuthenticated]: Forbidden - Invalid token: ${verifyError}`);
