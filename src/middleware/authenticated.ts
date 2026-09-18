@@ -3,6 +3,9 @@ import { timingSafeEqual } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 
 import { poolData } from '../auth/awsCognito';
+import { refreshTokens } from '../auth/refresh';
+import { JwtExpiredError } from 'aws-jwt-verify/error';
+
 import { verifyIdToken } from '../auth/verifier';
 import logger from '../logger/winston';
 
@@ -19,13 +22,18 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB);
 }
 
+/** True when a jwt-verify failure is due to expiry specifically (vs a bad signature/aud). */
+function isExpiredError(err: unknown): boolean {
+  return err instanceof JwtExpiredError;
+}
+
 /**
  * Authenticate a request by verifying its Cognito ID token.
  *
- * A4: uses the cached `aws-jwt-verify` verifier (src/auth/verifier.ts).
- * A5: the `app_session` cookie is now VALIDATED against the session's stored
- * access token, not merely checked for presence. Previously any non-empty
- * `app_session` value passed the guard; the cookie was a presence flag only.
+ * A4: cached `aws-jwt-verify` verifier. A5: `app_session` cookie validated
+ * against the session's access token. A6: on an EXPIRED id token, transparently
+ * refresh via the stored refresh token instead of 401-ing; only a genuine
+ * verification failure (bad signature/audience) or a failed refresh rejects.
  */
 export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -42,18 +50,36 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
       return res.status(401).json({ message: 'Forbidden: Invalid session' });
     }
 
-    const sessionToken = req.session.user.tokens.IdToken;
-
     try {
-      // Note: this verifies the ID token (signature, issuer, audience, expiry,
-      // token-use) but does NOT call adminGetUser to check user.Enabled — a
-      // disabled Cognito user retains access until their ID token expires
-      // (max ~1h). Accepted tradeoff to drop a per-request admin API call;
-      // revisit if immediate disable-on-demand is required.
-      await verifyIdToken(sessionToken);
+      await verifyIdToken(req.session.user.tokens.IdToken);
     } catch (verifyError) {
-      winstonLogger.error(`[isAuthenticated]: Forbidden - Invalid token: ${verifyError}`);
-      return res.status(401).json({ message: 'Forbidden: Invalid token' });
+      // A6: only an EXPIRED token is refreshable; a bad signature/audience is not.
+      if (!isExpiredError(verifyError)) {
+        winstonLogger.error(`[isAuthenticated]: Forbidden - Invalid token: ${verifyError}`);
+        return res.status(401).json({ message: 'Forbidden: Invalid token' });
+      }
+
+      try {
+        const refreshed = await refreshTokens(req.session.user.tokens.RefreshToken);
+        // Verify the freshly-issued id token before trusting it.
+        await verifyIdToken(refreshed.IdToken);
+
+        // Persist the new tokens on the session and re-issue the app_session
+        // cookie so the A5 check keeps matching on subsequent requests.
+        req.session.user.tokens.IdToken = refreshed.IdToken;
+        req.session.user.tokens.AccessToken = refreshed.AccessToken;
+        if (refreshed.RefreshToken) req.session.user.tokens.RefreshToken = refreshed.RefreshToken;
+        // Same cookie attributes as the login set-sites (authController) for consistency.
+        res.cookie('app_session', refreshed.AccessToken, {
+          httpOnly: true,
+          secure: true,
+          domain: `.${process.env.COOKIE_DOMAIN}`,
+        });
+        winstonLogger.info(`[isAuthenticated]: refreshed expired token for ${req.session.user.sub}`);
+      } catch (refreshError) {
+        winstonLogger.warn(`[isAuthenticated]: refresh failed, re-login required: ${refreshError}`);
+        return res.status(401).json({ message: 'Forbidden: Session expired' });
+      }
     }
 
     return next();

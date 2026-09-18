@@ -1,14 +1,19 @@
+import { JwtExpiredError } from 'aws-jwt-verify/error';
 import type { NextFunction, Request, Response } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock the cached verifier so the middleware test is hermetic.
 const verifyIdTokenMock = vi.fn();
-vi.mock('@/auth/verifier', () => ({
-  verifyIdToken: (t: string) => verifyIdTokenMock(t),
-}));
+const refreshTokensMock = vi.fn();
+vi.mock('@/auth/verifier', () => ({ verifyIdToken: (t: string) => verifyIdTokenMock(t) }));
+vi.mock('@/auth/refresh', () => ({ refreshTokens: (t: string) => refreshTokensMock(t) }));
+
+// A real expired-token error, as aws-jwt-verify actually throws — so the
+// middleware's `instanceof JwtExpiredError` check behaves as in production.
+const expiredError = () => new JwtExpiredError('Token expired at 2020-01-01T00:00:00.000Z', new Date());
 
 function mockRes() {
-  const res = {} as Response & { statusCode?: number; body?: unknown };
+  const res = {} as Response & { statusCode?: number; body?: unknown; cookies: Record<string, string> };
+  res.cookies = {};
   res.status = vi.fn().mockImplementation((code: number) => {
     res.statusCode = code;
     return res;
@@ -17,59 +22,93 @@ function mockRes() {
     res.body = b;
     return res;
   });
+  res.cookie = vi.fn().mockImplementation((name: string, val: string) => {
+    res.cookies[name] = val;
+    return res;
+  }) as unknown as Response['cookie'];
   return res;
 }
 
-// A request whose app_session cookie matches the session's stored AccessToken.
-const authedReq = (cookie = 'access-abc') =>
+const authedReq = () =>
   ({
-    session: { user: { username: 'jamie', sub: 'u1', tokens: { IdToken: 'id.token', AccessToken: 'access-abc' } } },
-    cookies: { app_session: cookie },
+    session: {
+      user: {
+        username: 'jamie',
+        sub: 'u1',
+        tokens: { IdToken: 'id.token', AccessToken: 'access-abc', RefreshToken: 'refresh-xyz' },
+      },
+    },
+    cookies: { app_session: 'access-abc' },
   }) as unknown as Request;
 
-describe('isAuthenticated (A4 verifier + A5 app_session validation)', () => {
-  beforeEach(() => verifyIdTokenMock.mockReset());
-
-  it('401s when session/cookie are missing (no token provided)', async () => {
-    const { isAuthenticated } = await import('@/middleware/authenticated');
-    const res = mockRes();
-    const next = vi.fn() as unknown as NextFunction;
-    await isAuthenticated({ session: {}, cookies: {} } as unknown as Request, res, next);
-    expect(res.statusCode).toBe(401);
-    expect(next).not.toHaveBeenCalled();
-    expect(verifyIdTokenMock).not.toHaveBeenCalled();
+describe('isAuthenticated (A4/A5/A6)', () => {
+  beforeEach(() => {
+    verifyIdTokenMock.mockReset();
+    refreshTokensMock.mockReset();
   });
 
-  it('A5: 401s when app_session is present but does NOT match the session token', async () => {
+  it('calls next() when the id token is valid (no refresh)', async () => {
+    verifyIdTokenMock.mockResolvedValueOnce({ sub: 'u1' });
     const { isAuthenticated } = await import('@/middleware/authenticated');
     const res = mockRes();
     const next = vi.fn() as unknown as NextFunction;
-    await isAuthenticated(authedReq('some-other-non-empty-value'), res, next);
-    expect(res.statusCode).toBe(401);
-    expect(res.body).toEqual({ message: 'Forbidden: Invalid session' });
-    expect(next).not.toHaveBeenCalled();
-    // Verifier must not even be reached when the cookie doesn't match.
-    expect(verifyIdTokenMock).not.toHaveBeenCalled();
-  });
-
-  it('calls next() when app_session matches AND the verifier accepts the ID token', async () => {
-    verifyIdTokenMock.mockResolvedValueOnce({ sub: 'u1', token_use: 'id' });
-    const { isAuthenticated } = await import('@/middleware/authenticated');
-    const res = mockRes();
-    const next = vi.fn() as unknown as NextFunction;
-    await isAuthenticated(authedReq('access-abc'), res, next);
-    expect(verifyIdTokenMock).toHaveBeenCalledWith('id.token');
+    await isAuthenticated(authedReq(), res, next);
     expect(next).toHaveBeenCalledOnce();
-    expect(res.statusCode).toBeUndefined();
+    expect(refreshTokensMock).not.toHaveBeenCalled();
   });
 
-  it('401s when the verifier rejects the token (cookie matches)', async () => {
-    verifyIdTokenMock.mockRejectedValueOnce(new Error('expired'));
+  it('A6: refreshes on an EXPIRED token, updates session + cookie, then next()', async () => {
+    verifyIdTokenMock
+      .mockRejectedValueOnce(expiredError()) // initial verify fails (expired)
+      .mockResolvedValueOnce({ sub: 'u1' }); // re-verify of the refreshed token passes
+    refreshTokensMock.mockResolvedValueOnce({ IdToken: 'new-id', AccessToken: 'new-access' });
+
+    const { isAuthenticated } = await import('@/middleware/authenticated');
+    const req = authedReq();
+    const res = mockRes();
+    const next = vi.fn() as unknown as NextFunction;
+    await isAuthenticated(req, res, next);
+
+    expect(refreshTokensMock).toHaveBeenCalledWith('refresh-xyz');
+    expect(next).toHaveBeenCalledOnce();
+    // session updated + app_session cookie re-issued to the new access token
+    expect(req.session.user?.tokens.IdToken).toBe('new-id');
+    expect(req.session.user?.tokens.AccessToken).toBe('new-access');
+    expect(res.cookies.app_session).toBe('new-access');
+  });
+
+  it('A6: does NOT refresh on a non-expiry verify failure (bad signature) -> 401', async () => {
+    verifyIdTokenMock.mockRejectedValueOnce(new Error('Invalid signature'));
     const { isAuthenticated } = await import('@/middleware/authenticated');
     const res = mockRes();
     const next = vi.fn() as unknown as NextFunction;
-    await isAuthenticated(authedReq('access-abc'), res, next);
+    await isAuthenticated(authedReq(), res, next);
     expect(res.statusCode).toBe(401);
+    expect(refreshTokensMock).not.toHaveBeenCalled();
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it('A6: 401 Session expired when refresh itself fails', async () => {
+    verifyIdTokenMock.mockRejectedValueOnce(expiredError());
+    refreshTokensMock.mockRejectedValueOnce(new Error('NotAuthorizedException'));
+    const { isAuthenticated } = await import('@/middleware/authenticated');
+    const res = mockRes();
+    const next = vi.fn() as unknown as NextFunction;
+    await isAuthenticated(authedReq(), res, next);
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toEqual({ message: 'Forbidden: Session expired' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('A5: present-but-mismatched app_session -> 401, no verify/refresh', async () => {
+    const { isAuthenticated } = await import('@/middleware/authenticated');
+    const req = authedReq();
+    (req as unknown as { cookies: Record<string, string> }).cookies.app_session = 'wrong';
+    const res = mockRes();
+    const next = vi.fn() as unknown as NextFunction;
+    await isAuthenticated(req, res, next);
+    expect(res.statusCode).toBe(401);
+    expect(verifyIdTokenMock).not.toHaveBeenCalled();
+    expect(refreshTokensMock).not.toHaveBeenCalled();
   });
 });
