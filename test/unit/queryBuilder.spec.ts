@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildOrQuery } from '@/store/utils/queryBuilder';
+import { buildOrQuery, escapeRegex } from '@/store/utils/queryBuilder';
 
-// CHARACTERIZATION tests: these capture the query builder's CURRENT behavior
-// on `main` so the D1 (regex-injection) fix in the next stacked PR is a
-// deliberate, visible change rather than a silent one.
-describe('buildOrQuery (characterization of current behavior)', () => {
+describe('buildOrQuery', () => {
   it('maps each key to a $regex clause with the given options', () => {
     const out = buildOrQuery<{ name: string; author: string }>('pasta', ['name', 'author'], 'i');
     expect(out).toEqual([
@@ -19,13 +16,19 @@ describe('buildOrQuery (characterization of current behavior)', () => {
     expect(out[0].name.$options).toBe('i');
   });
 
-  // BUG D1 (documented, not yet fixed): raw user input is passed straight into
-  // $regex with no escaping — a ReDoS / regex-injection surface. This test
-  // pins the vulnerable behavior; when D1 is fixed the assertion flips to
-  // expect the metacharacters to be escaped.
-  it('DOCUMENTS D1: passes raw regex metacharacters through unescaped (vulnerable)', () => {
+  // D1 FIX (was a documented vulnerability): user input is now escaped so
+  // regex metacharacters are matched literally — no ReDoS / regex injection.
+  it('escapes regex metacharacters in the search term (D1 fix)', () => {
     const malicious = '(a+)+$';
     const out = buildOrQuery<{ name: string }>(malicious, ['name']);
-    expect(out[0].name.$regex).toBe(malicious); // <-- unescaped today; fix will change this
+    expect(out[0].name.$regex).toBe('\\(a\\+\\)\\+\\$');
+  });
+
+  it('a plain search term is unchanged by escaping', () => {
+    expect(escapeRegex('chicken curry')).toBe('chicken curry');
+  });
+
+  it('escapes each dangerous character', () => {
+    expect(escapeRegex('.*+?^${}()|[]\\')).toBe('\\.\\*\\+\\?\\^\\$\\{\\}\\(\\)\\|\\[\\]\\\\');
   });
 });
