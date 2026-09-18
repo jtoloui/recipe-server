@@ -29,9 +29,15 @@ const client = new CognitoIdentityProviderClient({ region: process.env.AWS_REGIO
  * into "re-login required".
  */
 export async function refreshTokens(refreshToken: string): Promise<RefreshedTokens> {
+  const clientId = process.env.AWS_COGNITO_CLIENT_ID;
+  if (!clientId) {
+    // Fail loudly rather than sending an empty ClientId that Cognito rejects opaquely.
+    throw new Error('Refresh failed: AWS_COGNITO_CLIENT_ID is not set');
+  }
+
   const command = new InitiateAuthCommand({
     AuthFlow: 'REFRESH_TOKEN_AUTH',
-    ClientId: process.env.AWS_COGNITO_CLIENT_ID || '',
+    ClientId: clientId,
     AuthParameters: { REFRESH_TOKEN: refreshToken },
   });
 
