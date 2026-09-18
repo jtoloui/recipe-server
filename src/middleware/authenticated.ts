@@ -1,4 +1,5 @@
 import { CognitoIdentityProvider } from '@aws-sdk/client-cognito-identity-provider';
+import { timingSafeEqual } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 
 import { poolData } from '../auth/awsCognito';
@@ -8,19 +9,37 @@ import logger from '../logger/winston';
 const winstonLogger = logger('info', 'Authentication Middleware');
 
 /**
+ * Constant-time string comparison to avoid leaking length/content via timing.
+ * Returns false for any length mismatch.
+ */
+function safeEqual(a: string, b: string): boolean {
+  const bufA = new TextEncoder().encode(a);
+  const bufB = new TextEncoder().encode(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
+
+/**
  * Authenticate a request by verifying its Cognito ID token.
  *
- * A4: uses the cached `aws-jwt-verify` verifier (src/auth/verifier.ts), which
- * validates signature, issuer, audience, expiry and token-use in one call and
- * caches the JWKS. This replaces the previous per-request pattern here:
- * `new CognitoIdentityProvider()` + `adminGetUser` + an HTTP JWKS fetch +
- * `jwk-to-pem` + a hand-rolled `jwt.verify` with manual iss/aud checks.
+ * A4: uses the cached `aws-jwt-verify` verifier (src/auth/verifier.ts).
+ * A5: the `app_session` cookie is now VALIDATED against the session's stored
+ * access token, not merely checked for presence. Previously any non-empty
+ * `app_session` value passed the guard; the cookie was a presence flag only.
  */
 export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.session?.user?.username || !req.cookies?.app_session || !req.session.user) {
       winstonLogger.error(`[isAuthenticated]: Forbidden - No token provided`);
       return res.status(401).json({ message: 'Forbidden: No token provided' });
+    }
+
+    // A5: the app_session cookie must match the access token we issued for this
+    // session — a non-empty-but-wrong cookie must NOT pass.
+    const expectedAppSession = req.session.user.tokens.AccessToken;
+    if (!expectedAppSession || !safeEqual(req.cookies.app_session, expectedAppSession)) {
+      winstonLogger.warn(`[isAuthenticated]: Forbidden - app_session cookie does not match session`);
+      return res.status(401).json({ message: 'Forbidden: Invalid session' });
     }
 
     const sessionToken = req.session.user.tokens.IdToken;
