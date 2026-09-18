@@ -1,3 +1,4 @@
+import { JwtExpiredError } from 'aws-jwt-verify/error';
 import type { NextFunction, Request, Response } from 'express';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -5,6 +6,10 @@ const verifyIdTokenMock = vi.fn();
 const refreshTokensMock = vi.fn();
 vi.mock('@/auth/verifier', () => ({ verifyIdToken: (t: string) => verifyIdTokenMock(t) }));
 vi.mock('@/auth/refresh', () => ({ refreshTokens: (t: string) => refreshTokensMock(t) }));
+
+// A real expired-token error, as aws-jwt-verify actually throws — so the
+// middleware's `instanceof JwtExpiredError` check behaves as in production.
+const expiredError = () => new JwtExpiredError('Token expired at 2020-01-01T00:00:00.000Z', new Date());
 
 function mockRes() {
   const res = {} as Response & { statusCode?: number; body?: unknown; cookies: Record<string, string> };
@@ -54,7 +59,7 @@ describe('isAuthenticated (A4/A5/A6)', () => {
 
   it('A6: refreshes on an EXPIRED token, updates session + cookie, then next()', async () => {
     verifyIdTokenMock
-      .mockRejectedValueOnce(new Error('Token expired')) // initial verify fails (expired)
+      .mockRejectedValueOnce(expiredError()) // initial verify fails (expired)
       .mockResolvedValueOnce({ sub: 'u1' }); // re-verify of the refreshed token passes
     refreshTokensMock.mockResolvedValueOnce({ IdToken: 'new-id', AccessToken: 'new-access' });
 
@@ -84,7 +89,7 @@ describe('isAuthenticated (A4/A5/A6)', () => {
   });
 
   it('A6: 401 Session expired when refresh itself fails', async () => {
-    verifyIdTokenMock.mockRejectedValueOnce(new Error('Token expired'));
+    verifyIdTokenMock.mockRejectedValueOnce(expiredError());
     refreshTokensMock.mockRejectedValueOnce(new Error('NotAuthorizedException'));
     const { isAuthenticated } = await import('@/middleware/authenticated');
     const res = mockRes();

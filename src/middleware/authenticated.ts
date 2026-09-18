@@ -4,6 +4,8 @@ import { NextFunction, Request, Response } from 'express';
 
 import { poolData } from '../auth/awsCognito';
 import { refreshTokens } from '../auth/refresh';
+import { JwtExpiredError } from 'aws-jwt-verify/error';
+
 import { verifyIdToken } from '../auth/verifier';
 import logger from '../logger/winston';
 
@@ -22,8 +24,7 @@ function safeEqual(a: string, b: string): boolean {
 
 /** True when a jwt-verify failure is due to expiry specifically (vs a bad signature/aud). */
 function isExpiredError(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
-  return /expire/i.test(msg);
+  return err instanceof JwtExpiredError;
 }
 
 /**
@@ -68,12 +69,11 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
         req.session.user.tokens.IdToken = refreshed.IdToken;
         req.session.user.tokens.AccessToken = refreshed.AccessToken;
         if (refreshed.RefreshToken) req.session.user.tokens.RefreshToken = refreshed.RefreshToken;
+        // Same cookie attributes as the login set-sites (authController) for consistency.
         res.cookie('app_session', refreshed.AccessToken, {
-          maxAge: 1000 * 60 * 60 * 24 * 7,
-          secure: true,
           httpOnly: true,
+          secure: true,
           domain: `.${process.env.COOKIE_DOMAIN}`,
-          sameSite: 'lax',
         });
         winstonLogger.info(`[isAuthenticated]: refreshed expired token for ${req.session.user.sub}`);
       } catch (refreshError) {
