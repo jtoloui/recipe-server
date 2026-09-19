@@ -1,7 +1,7 @@
 import express from 'express';
 
 import { AuthController } from '../controllers/authController';
-import { isAdmin } from '../middleware/authenticated';
+import { isAdmin, isAuthenticated } from '../middleware/authenticated';
 import { ConfigType } from '../types/config/config';
 
 export const authRoutes = (config: ConfigType) => {
@@ -23,6 +23,7 @@ export const authRoutes = (config: ConfigType) => {
   router.post('/resend/verification-code', authController.resendVerificationCode);
   router.post('/forgot-password', authController.forgotPassword);
   router.post('/forgot-password/confirm', authController.forgotPasswordConfirm);
+  router.post('/change-password', isAuthenticated, authController.changePassword);
   router.get('/callback', authController.callBack);
   router.get('/authenticated', authController.isAuthenticated);
 

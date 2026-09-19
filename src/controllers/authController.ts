@@ -1,5 +1,6 @@
 import {
   CognitoIdentityProvider as CognitoIdentityServiceProvider,
+  ChangePasswordCommand,
   ConfirmForgotPasswordCommand,
   ForgotPasswordCommand,
   ListUsersRequest,
@@ -50,6 +51,11 @@ type forgotPasswordConfirmBody = {
   password: string;
 };
 
+type changePasswordBody = {
+  previousPassword: string;
+  proposedPassword: string;
+};
+
 type callBackParams = {
   code: string;
   state: string;
@@ -86,6 +92,7 @@ interface Auth {
   resendVerificationCode: (req: Request<unknown, unknown, resendVerificationCodeBody>, res: Response) => void;
   forgotPassword: (req: Request<null, null, forgotPasswordBody>, res: Response) => void;
   forgotPasswordConfirm: (req: Request<null, null, forgotPasswordConfirmBody>, res: Response) => void;
+  changePassword: (req: Request<unknown, unknown, changePasswordBody>, res: Response) => void;
   callBack: (req: Request<callBackParams>, res: Response) => void;
   isAuthenticated: (req: Request, res: Response) => void;
 }
@@ -433,6 +440,46 @@ export class AuthController implements Auth {
     } catch (error) {
       this.logger.error('Error confirming forgot password:', error);
       return res.status(400).json({ message: 'Error confirming forgot password' });
+    }
+  };
+
+  changePassword = async (req: Request<unknown, unknown, changePasswordBody>, res: Response) => {
+    try {
+      const accessToken = req.session.user?.tokens?.AccessToken;
+      if (!accessToken) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const { previousPassword, proposedPassword } = req.body;
+      if (!previousPassword || !proposedPassword) {
+        return res.status(400).json({ message: 'Both current and new password are required' });
+      }
+      if (proposedPassword.length < 8) {
+        return res.status(400).json({ message: 'New password must be at least 8 characters' });
+      }
+
+      await this.client.send(
+        new ChangePasswordCommand({
+          AccessToken: accessToken,
+          PreviousPassword: previousPassword,
+          ProposedPassword: proposedPassword,
+        }),
+      );
+
+      return res.status(200).json({ message: 'Password changed' });
+    } catch (error) {
+      this.logger.error('Error changing password:', error);
+      const name = (error as { name?: string })?.name;
+      if (name === 'NotAuthorizedException') {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+      if (name === 'InvalidPasswordException') {
+        return res.status(400).json({ message: 'New password does not meet requirements' });
+      }
+      if (name === 'LimitExceededException') {
+        return res.status(429).json({ message: 'Too many attempts, please try again later' });
+      }
+      return res.status(400).json({ message: 'Error changing password' });
     }
   };
 
