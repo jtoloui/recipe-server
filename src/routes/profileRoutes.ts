@@ -9,9 +9,13 @@ export const profileRoutes = (config: ConfigType) => {
 
   const profileController = new ProfileController({
     logger: config.newLogger(config.logLevel, 'ProfileController'),
+    cognitoRegion: config.awsRegion,
+    accessKeyId: config.awsAccessKeyId,
+    secretAccessKey: config.awsSecretAccessKey,
   });
 
   router.get('/', isAuthenticated, profileController.getProfile);
+  router.put('/', isAuthenticated, profileController.updateProfile);
 
   return router;
 };
