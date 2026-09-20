@@ -98,12 +98,19 @@ export class AuthController implements Auth {
   constructor(config: authControllerConfig) {
     this.logger = config.logger;
     this.response = new ResponseHandler({ logger: this.logger });
+    // Omit credentials on Lambda (no static keys) so the SDK uses the execution
+    // role; empty-string keys would override the chain -> "security token invalid".
+    const useStaticKeys = !!config.accessKeyId && !!config.secretAccessKey;
     this.client = new CognitoIdentityServiceProvider({
       region: config.cognitoRegion,
-      credentials: {
-        accessKeyId: config.accessKeyId || '',
-        secretAccessKey: config.secretAccessKey || '',
-      },
+      ...(useStaticKeys
+        ? {
+            credentials: {
+              accessKeyId: config.accessKeyId as string,
+              secretAccessKey: config.secretAccessKey as string,
+            },
+          }
+        : {}),
     });
   }
 

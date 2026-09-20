@@ -100,12 +100,21 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
         UserPoolId: poolData.UserPoolId,
         Username: req.session?.user?.username,
       };
+      // On Lambda there are no static keys: omit credentials so the SDK uses the
+      // execution role via the default provider chain. Passing empty-string keys
+      // overrides the chain and yields "security token is invalid".
+      const useStaticKeys =
+        !!process.env.AWS_ACCESS_KEY_ID && !!process.env.AWS_SECRET_ACCESS_KEY;
       const client = new CognitoIdentityProvider({
         region: process.env.AWS_REGION,
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-        },
+        ...(useStaticKeys
+          ? {
+              credentials: {
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+              },
+            }
+          : {}),
       });
 
       const groups = await client.adminListGroupsForUser(params);
