@@ -331,14 +331,11 @@ export class ApiStack extends Stack {
 
     imageBucket.grantReadWrite(fn);
 
+    // CORS is handled by the Express app (src/utils/cors.ts, credentialed +
+    // keyed to WEB_APP_URI). Do NOT also set CORS on the Function URL, or both
+    // layers emit Access-Control-Allow-Origin and the browser rejects the pair.
     const fnUrl = fn.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
-      cors: {
-        allowedOrigins: props.appUrls,
-        allowedMethods: [lambda.HttpMethod.ALL],
-        allowedHeaders: ['*'],
-        allowCredentials: true,
-      },
     });
 
     new CfnOutput(this, 'ApiFunctionUrl', { value: fnUrl.url });
