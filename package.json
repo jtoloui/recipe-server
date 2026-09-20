@@ -25,6 +25,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.540.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.354.0",
     "@aws-sdk/client-s3": "^3.540.0",
     "@aws-sdk/client-ssm": "^3.540.0",
