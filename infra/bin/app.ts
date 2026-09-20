@@ -8,6 +8,7 @@ import {
 } from '../lib/api-stack.js';
 import { MediaCertStack } from '../lib/media-cert-stack.js';
 import { MediaStack } from '../lib/media-stack.js';
+import { PipelineStack } from '../lib/pipeline-stack.js';
 
 const app = new App();
 
@@ -203,4 +204,16 @@ new MediaStack(app, `JustCookingMedia${Env}`, {
   description:
     'JustCooking media CloudFront (OAC) fronting the image bucket at ' +
     mediaDomain,
+});
+
+
+// CI/CD trust plane (account-global; NOT env-suffixed). Deploy ONCE manually:
+//   cdk deploy JustCookingPipeline -c account=276663280738
+// Then use the emitted DeployRoleArn* outputs in each repo's GitHub workflow.
+new PipelineStack(app, 'JustCookingPipeline', {
+  env: { account, region },
+  repos: {
+    server: 'jtoloui/recipe-server',
+    react: 'jtoloui/recipe-react',
+  },
 });
