@@ -77,23 +77,32 @@ const mediaDomain =
 const cognitoCustomDomain = app.node.tryGetContext('cognitoCustomDomain') as
   | string
   | undefined; // e.g. idp-dev.justcook.ing — enables the Cognito custom domain when set
+const feDomain = (app.node.tryGetContext("feDomain") as string | undefined) ?? undefined; // e.g. dev.justcook.ing
+const apiDomain = (app.node.tryGetContext("apiDomain") as string | undefined) ?? undefined; // e.g. api-dev.justcook.ing
+// Cert ARN passed as a literal string (stable, us-east-1) so cross-region consumers
+// import by ARN instead of a fragile cross-region CFN export/import.
+const certArn = (app.node.tryGetContext("certArn") as string | undefined) ??
+  "arn:aws:acm:us-east-1:276663280738:certificate/e9a7d8de-73c7-4fa2-90c1-534abd418811";
 // Known name of the image bucket created by JustCookingApi (RETAIN'd).
 const imageBucketName =
   (app.node.tryGetContext('imageBucketName') as string | undefined) ??
   'justcookingapi-imagebucket97210811-tj9hed7vwenq';
 
 // us-east-1 ACM cert covering both custom domains (only the domains actually used).
-const certDomains = [mediaDomain, ...(cognitoCustomDomain ? [cognitoCustomDomain] : [])];
+const certDomains = [
+  mediaDomain,
+  ...(cognitoCustomDomain ? [cognitoCustomDomain] : []),
+  ...(feDomain ? [feDomain] : []),
+  ...(apiDomain ? [apiDomain] : []),
+];
 const certStack = new MediaCertStack(app, 'JustCookingMediaCert', {
   env: { account, region: 'us-east-1' },
-  crossRegionReferences: true,
   domainNames: certDomains,
   description: 'JustCooking ACM cert (us-east-1) for media + Cognito custom domains',
 });
 
 new ApiStack(app, 'JustCookingApi', {
   env: { account, region },
-  crossRegionReferences: true,
   serverAssetPath,
   emailSenderAssetPath,
   ssmParamNames,
@@ -106,7 +115,9 @@ new ApiStack(app, 'JustCookingApi', {
   logoutUrls,
   cognitoDomainPrefix,
   cognitoCustomDomain,
-  cognitoCustomDomainCert: cognitoCustomDomain ? certStack.certificate : undefined,
+  cognitoCustomDomainCertArn: cognitoCustomDomain ? certArn : undefined,
+  apiDomain,
+  apiDomainCertArn: apiDomain ? certArn : undefined,
   appConfig: {
     s3BucketName: (app.node.tryGetContext('s3BucketName') as string) ?? '',
     webAppUri:
@@ -128,10 +139,9 @@ new ApiStack(app, 'JustCookingApi', {
 
 new MediaStack(app, 'JustCookingMedia', {
   env: { account, region },
-  crossRegionReferences: true,
   imageBucketName,
   mediaDomain,
-  certificate: certStack.certificate,
+  certificateArn: certArn,
   description:
     'JustCooking media CloudFront (OAC) fronting the image bucket at ' +
     mediaDomain,

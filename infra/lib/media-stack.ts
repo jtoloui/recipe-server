@@ -20,7 +20,7 @@ export interface MediaStackProps extends StackProps {
    * ACM certificate for the media alias. MUST be in us-east-1 (CloudFront
    * requirement). Passed as a cross-region reference from MediaCertStack.
    */
-  readonly certificate: acm.ICertificate;
+  readonly certificateArn: string;
 }
 
 /**
@@ -70,7 +70,7 @@ export class MediaStack extends Stack {
     const distribution = new cloudfront.Distribution(this, 'MediaDistribution', {
       comment: 'JustCooking media (image bucket) — OAC',
       domainNames: [props.mediaDomain],
-      certificate: props.certificate,
+      certificate: acm.Certificate.fromCertificateArn(this, "MediaCert", props.certificateArn),
       minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
       httpVersion: cloudfront.HttpVersion.HTTP2,
       defaultBehavior: {

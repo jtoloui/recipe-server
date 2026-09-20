@@ -2,6 +2,7 @@ import * as path from 'node:path';
 
 import {
   Duration,
+  Fn,
   RemovalPolicy,
   SecretValue,
   Stack,
@@ -9,6 +10,9 @@ import {
   CfnOutput,
 } from 'aws-cdk-lib';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
+import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
@@ -38,7 +42,11 @@ export interface ApiStackProps extends StackProps {
   /** Optional Cognito custom domain, e.g. idp-dev.justcook.ing (needs a us-east-1 cert). */
   readonly cognitoCustomDomain?: string;
   /** us-east-1 ACM cert for the Cognito custom domain (cross-region ref). */
-  readonly cognitoCustomDomainCert?: import("aws-cdk-lib/aws-certificatemanager").ICertificate;
+  readonly cognitoCustomDomainCertArn?: string;
+  /** Optional API custom domain, e.g. api-dev.justcook.ing (CloudFront in front of the Function URL). */
+  readonly apiDomain?: string;
+  /** us-east-1 ACM cert for the API custom domain (cross-region ref). */
+  readonly apiDomainCertArn?: string;
   /** Create the recipe-image bucket 1:1 with the original s3-bucket.yaml (default true). If false, reuse an existing bucket named appConfig.s3BucketName. */
   readonly createImageBucket?: boolean;
   /** CORS AllowedOrigins for the image bucket (uploads). */
@@ -207,11 +215,12 @@ export class ApiStack extends Stack {
     // Optional Cognito CUSTOM domain (idp-dev.justcook.ing) alongside the prefix
     // domain, 1:1 with the original which defined both. Needs a us-east-1 cert.
     let cognitoCustomDomainTarget: string | undefined;
-    if (props.cognitoCustomDomain && props.cognitoCustomDomainCert) {
+    if (props.cognitoCustomDomain && props.cognitoCustomDomainCertArn) {
+      const cognitoCert = acm.Certificate.fromCertificateArn(this, "CognitoCustomCert", props.cognitoCustomDomainCertArn);
       const customDomain = userPool.addDomain("CustomHostedUiDomain", {
         customDomain: {
           domainName: props.cognitoCustomDomain,
-          certificate: props.cognitoCustomDomainCert,
+          certificate: cognitoCert,
         },
       });
       cognitoCustomDomainTarget = customDomain.cloudFrontEndpoint;
@@ -337,6 +346,38 @@ export class ApiStack extends Stack {
     const fnUrl = fn.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
     });
+
+    // Optional API custom domain: CloudFront in front of the Function URL, so
+    // api-dev.justcook.ing shares the justcook.ing parent with the FE (required
+    // for the .justcook.ing session cookie + SameSite to work across FE↔API).
+    // Function URLs cannot take a custom domain directly, hence the distribution.
+    if (props.apiDomain && props.apiDomainCertArn) {
+      const apiCert = acm.Certificate.fromCertificateArn(this, "ApiCustomCert", props.apiDomainCertArn);
+      const fnUrlHost = Fn.select(2, Fn.split('/', fnUrl.url)); // strip https:// and trailing /
+      const apiDist = new cloudfront.Distribution(this, 'ApiDistribution', {
+        comment: 'JustCooking API custom domain -> Function URL',
+        domainNames: [props.apiDomain],
+        certificate: apiCert,
+        minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+        defaultBehavior: {
+          origin: new origins.HttpOrigin(fnUrlHost, {
+            protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+            customHeaders: {},
+          }),
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
+          // Forward everything except Host (Function URL rejects a foreign Host header).
+          originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        },
+      });
+      new CfnOutput(this, 'ApiDistributionDomain', {
+        value: apiDist.distributionDomainName,
+        description:
+          'Add a Cloudflare DNS-only CNAME: api-dev.justcook.ing -> this value',
+      });
+      new CfnOutput(this, 'ApiCustomDomain', { value: props.apiDomain });
+    }
 
     new CfnOutput(this, 'ApiFunctionUrl', { value: fnUrl.url });
     new CfnOutput(this, 'UserPoolId', { value: userPool.userPoolId });
