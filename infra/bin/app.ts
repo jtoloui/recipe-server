@@ -16,7 +16,7 @@ const serverAssetPath =
 const appUrlsCtx = app.node.tryGetContext('appUrls') as string | undefined;
 const appUrls = appUrlsCtx
   ? appUrlsCtx.split(',').map((s) => s.trim())
-  : ['https://d3nrkbp02xztg2.cloudfront.net'];
+  : ['https://dnu0gutn8zy9x.cloudfront.net'];
 
 const cognitoDomainPrefix =
   (app.node.tryGetContext('cognitoDomainPrefix') as string | undefined) ??
