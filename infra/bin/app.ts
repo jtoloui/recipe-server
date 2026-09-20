@@ -7,7 +7,7 @@ const app = new App();
 
 const account =
   app.node.tryGetContext('account') ?? process.env.CDK_DEFAULT_ACCOUNT;
-const region = app.node.tryGetContext('region') ?? 'us-east-1';
+const region = app.node.tryGetContext('region') ?? 'eu-west-2';
 
 const serverAssetPath =
   (app.node.tryGetContext('serverAssetPath') as string | undefined) ??
@@ -33,9 +33,11 @@ const ssmParamNames = Object.values(ssmSecretsEnv);
 const googleClientIdParam =
   (app.node.tryGetContext('googleClientIdParam') as string | undefined) ??
   '/justcooking/google-client-id';
-const googleClientSecretParam =
-  (app.node.tryGetContext('googleClientSecretParam') as string | undefined) ??
-  '/justcooking/google-client-secret';
+// Secret is a deploy-time literal (Cognito can't ref ssm-secure). Pass via
+// -c googleClientSecret=... (from secrets.env), never committed.
+const googleClientSecret = app.node.tryGetContext('googleClientSecret') as
+  | string
+  | undefined;
 
 const primaryAppUrl = appUrls[0];
 
@@ -45,7 +47,7 @@ new ApiStack(app, 'JustCookingApi', {
   ssmParamNames,
   ssmSecretsEnv,
   googleClientIdParam,
-  googleClientSecretParam,
+  googleClientSecret,
   appUrls,
   cognitoDomainPrefix,
   appConfig: {

@@ -29,8 +29,11 @@ export interface ApiStackProps extends StackProps {
    */
   readonly ssmSecretsEnv: Record<string, string>;
   /** Google OAuth client id/secret — SSM SecureString param names, resolved at deploy. */
+  /** Google OAuth client id — SSM String param name (public, resolved via dynamic ref). */
   readonly googleClientIdParam?: string;
-  readonly googleClientSecretParam?: string;
+  /** Google OAuth client secret — LITERAL value (Cognito IdP can't take an ssm-secure ref);
+   *  supplied at deploy from the local secrets.env, never committed. */
+  readonly googleClientSecret?: string;
   /** FE origin(s) for Cognito callback/logout URLs + CORS, e.g. https://www.justcook.ing. */
   readonly appUrls: string[];
   /** Prefix for the Cognito hosted-UI domain, e.g. "justcooking". */
@@ -88,11 +91,11 @@ export class ApiStack extends Stack {
     });
 
     let googleIdp: cognito.UserPoolIdentityProviderGoogle | undefined;
-    if (props.googleClientIdParam && props.googleClientSecretParam) {
+    if (props.googleClientIdParam && props.googleClientSecret) {
       googleIdp = new cognito.UserPoolIdentityProviderGoogle(this, 'Google', {
         userPool,
         clientId: `{{resolve:ssm:${props.googleClientIdParam}}}`,
-        clientSecretValue: SecretValue.ssmSecure(props.googleClientSecretParam),
+        clientSecretValue: SecretValue.unsafePlainText(props.googleClientSecret),
         scopes: ['profile', 'email', 'openid'],
         attributeMapping: {
           email: cognito.ProviderAttribute.GOOGLE_EMAIL,
@@ -240,7 +243,6 @@ export class ApiStack extends Stack {
 /** Staged Lambda asset (built server + run.sh + prod node_modules). */
 export const defaultServerAssetPath = path.resolve(
   __dirname,
-  '..',
   '..',
   'lambda-dist'
 );
