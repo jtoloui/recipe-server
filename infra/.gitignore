@@ -5,3 +5,4 @@ lambda-dist/
 *.js
 !scripts/*.mjs
 .env
+secrets.env
