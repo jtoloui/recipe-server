@@ -30,6 +30,10 @@ export interface NutritionEstimateInput {
   name?: string;
   servings: number;
   ingredients: NutritionIngredientInput[];
+  /** Method steps — reveal added fats/oils and cooking method the ingredient list may omit. */
+  steps?: string[];
+  vegan?: boolean;
+  vegetarian?: boolean;
 }
 
 /**
@@ -139,6 +143,17 @@ export class NutritionService {
       })
       .join('\n');
 
+    const diet: string[] = [];
+    if (input.vegan) diet.push('vegan');
+    else if (input.vegetarian) diet.push('vegetarian');
+    const dietLine = diet.length
+      ? `This recipe is ${diet.join(', ')} — do not assume any animal-derived ingredients not listed.`
+      : '';
+
+    const methodBlock = (input.steps || [])
+      .map((step, idx) => `${idx + 1}. ${step}`)
+      .join('\n');
+
     return [
       'You are a nutrition estimator for a UK recipe app.',
       'Estimate each ingredient individually, then total them, then divide by the number of servings.',
@@ -148,9 +163,13 @@ export class NutritionService {
       'Call the record_nutrition tool with your result. All macro values are grams except kcal.',
       '',
       `Recipe: ${input.name || 'Untitled recipe'}. Servings: ${input.servings}.`,
+      dietLine,
       'Ingredients:',
       ingredientLines,
-    ].join('\n');
+      ...(methodBlock ? ['', 'Method (use only to catch added oils/fats and cooking method that affect nutrition):', methodBlock] : []),
+    ]
+      .filter(Boolean)
+      .join('\n');
   }
 
   private coerceValues(raw: unknown): NutritionValues {
