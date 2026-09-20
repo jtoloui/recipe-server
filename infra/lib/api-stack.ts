@@ -348,6 +348,8 @@ export class ApiStack extends Stack {
         effect: iam.Effect.ALLOW,
         actions: [
           "cognito-idp:AdminGetUser",
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminListGroupsForUser",
           "cognito-idp:AdminUserGlobalSignOut",
           "cognito-idp:AdminInitiateAuth",
           "cognito-idp:AdminRespondToAuthChallenge",
