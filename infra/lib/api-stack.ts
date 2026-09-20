@@ -37,6 +37,8 @@ export interface ApiStackProps extends StackProps {
   readonly cognitoDomainPrefix: string;
   /** Non-secret app config passed as plain Lambda env. */
   readonly appConfig: {
+    /** Existing S3 bucket for recipe images (Lambda role is granted RW on it). */
+    s3BucketName: string;
     webAppUri: string;
     apiAppUri: string;
     mediaUri: string;
@@ -159,6 +161,7 @@ export class ApiStack extends Stack {
         COOKIE_DOMAIN: props.appConfig.cookieDomain,
         MONGODB_SESSION_DB: props.appConfig.sessionDbName,
         MONGODB_SESSION_COLLECTION: props.appConfig.sessionCollection,
+        AWS_S3_BUCKET_NAME: props.appConfig.s3BucketName,
         LOG_LEVEL: props.appConfig.logLevel,
       },
     });
@@ -185,6 +188,24 @@ export class ApiStack extends Stack {
               'kms:ViaService': `ssm.${this.region}.amazonaws.com`,
             },
           },
+        })
+      );
+    }
+
+    // Grant the Lambda role RW on the recipe-images bucket (no static keys).
+    if (props.appConfig.s3BucketName) {
+      fn.addToRolePolicy(
+        new iam.PolicyStatement({
+          actions: [
+            's3:PutObject',
+            's3:GetObject',
+            's3:DeleteObject',
+            's3:ListBucket',
+          ],
+          resources: [
+            `arn:aws:s3:::${props.appConfig.s3BucketName}`,
+            `arn:aws:s3:::${props.appConfig.s3BucketName}/*`,
+          ],
         })
       );
     }

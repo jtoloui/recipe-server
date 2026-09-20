@@ -27,8 +27,6 @@ const cognitoDomainPrefix =
 const ssmSecretsEnv: Record<string, string> = {
   MONGODB_URI: '/justcooking/mongo-uri',
   SESSION_SECRET: '/justcooking/session-secret',
-  AWS_ACCESS_KEY_ID: '/justcooking/s3-access-key-id',
-  AWS_SECRET_ACCESS_KEY: '/justcooking/s3-secret-access-key',
 };
 const ssmParamNames = Object.values(ssmSecretsEnv);
 
@@ -59,6 +57,7 @@ new ApiStack(app, 'JustCookingApi', {
       (app.node.tryGetContext('sessionDbName') as string) ?? 'sessions',
     sessionCollection:
       (app.node.tryGetContext('sessionCollection') as string) ?? 'sessions',
+    s3BucketName: (app.node.tryGetContext('s3BucketName') as string) ?? '',
     logLevel: (app.node.tryGetContext('logLevel') as string) ?? 'info',
   },
   description:
