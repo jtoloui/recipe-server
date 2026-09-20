@@ -7,14 +7,12 @@ const app = new App();
 
 const account =
   app.node.tryGetContext('account') ?? process.env.CDK_DEFAULT_ACCOUNT;
-// Match the FE + bootstrap region unless overridden.
 const region = app.node.tryGetContext('region') ?? 'us-east-1';
 
 const serverAssetPath =
   (app.node.tryGetContext('serverAssetPath') as string | undefined) ??
   defaultServerAssetPath;
 
-// FE origins allowed for CORS + Cognito callback/logout.
 const appUrlsCtx = app.node.tryGetContext('appUrls') as string | undefined;
 const appUrls = appUrlsCtx
   ? appUrlsCtx.split(',').map((s) => s.trim())
@@ -24,33 +22,45 @@ const cognitoDomainPrefix =
   (app.node.tryGetContext('cognitoDomainPrefix') as string | undefined) ??
   'justcooking';
 
-// SSM SecureString param names the server reads at runtime (values set separately).
-const ssmParamNamesCtx = app.node.tryGetContext('ssmParamNames') as
-  | string
-  | undefined;
-const ssmParamNames = ssmParamNamesCtx
-  ? ssmParamNamesCtx.split(',').map((s) => s.trim())
-  : [
-      '/justcooking/mongo-uri',
-      '/justcooking/session-secret',
-      '/justcooking/aws-s3-access-key-id',
-      '/justcooking/aws-s3-secret-access-key',
-    ];
+// ENV_NAME -> SSM SecureString param name. Server's lambda-bootstrap hydrates
+// these into process.env at cold start.
+const ssmSecretsEnv: Record<string, string> = {
+  MONGODB_URI: '/justcooking/mongo-uri',
+  SESSION_SECRET: '/justcooking/session-secret',
+  AWS_ACCESS_KEY_ID: '/justcooking/s3-access-key-id',
+  AWS_SECRET_ACCESS_KEY: '/justcooking/s3-secret-access-key',
+};
+const ssmParamNames = Object.values(ssmSecretsEnv);
 
-const googleClientIdParam = app.node.tryGetContext('googleClientIdParam') as
-  | string
-  | undefined;
-const googleClientSecretParam = app.node.tryGetContext(
-  'googleClientSecretParam'
-) as string | undefined;
+const googleClientIdParam =
+  (app.node.tryGetContext('googleClientIdParam') as string | undefined) ??
+  '/justcooking/google-client-id';
+const googleClientSecretParam =
+  (app.node.tryGetContext('googleClientSecretParam') as string | undefined) ??
+  '/justcooking/google-client-secret';
+
+const primaryAppUrl = appUrls[0];
 
 new ApiStack(app, 'JustCookingApi', {
   env: { account, region },
   serverAssetPath,
   ssmParamNames,
+  ssmSecretsEnv,
   googleClientIdParam,
   googleClientSecretParam,
   appUrls,
   cognitoDomainPrefix,
-  description: 'JustCooking API — Express on Lambda Web Adapter + Function URL + Cognito',
+  appConfig: {
+    webAppUri: (app.node.tryGetContext('webAppUri') as string) ?? primaryAppUrl,
+    apiAppUri: (app.node.tryGetContext('apiAppUri') as string) ?? '',
+    mediaUri: (app.node.tryGetContext('mediaUri') as string) ?? '',
+    cookieDomain: (app.node.tryGetContext('cookieDomain') as string) ?? '',
+    sessionDbName:
+      (app.node.tryGetContext('sessionDbName') as string) ?? 'sessions',
+    sessionCollection:
+      (app.node.tryGetContext('sessionCollection') as string) ?? 'sessions',
+    logLevel: (app.node.tryGetContext('logLevel') as string) ?? 'info',
+  },
+  description:
+    'JustCooking API — Express on Lambda Web Adapter + Function URL + Cognito',
 });
