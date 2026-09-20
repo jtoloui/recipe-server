@@ -32,6 +32,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          # Cache npm downloads, keyed on both lockfiles (server root + infra).
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            infra/package-lock.json
 
       # The server's prebuild/build scripts invoke `bun` (matches local build).
       - uses: oven-sh/setup-bun@v2
