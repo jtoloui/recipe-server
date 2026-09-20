@@ -1,0 +1,7 @@
+node_modules/
+cdk.out/
+lambda-dist/
+*.d.ts
+*.js
+!scripts/*.mjs
+.env
