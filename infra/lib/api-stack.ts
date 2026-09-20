@@ -35,6 +35,10 @@ export interface ApiStackProps extends StackProps {
   /** Cognito logout URLs. */
   readonly logoutUrls: string[];
   readonly cognitoDomainPrefix: string;
+  /** Optional Cognito custom domain, e.g. idp-dev.justcook.ing (needs a us-east-1 cert). */
+  readonly cognitoCustomDomain?: string;
+  /** us-east-1 ACM cert for the Cognito custom domain (cross-region ref). */
+  readonly cognitoCustomDomainCert?: import("aws-cdk-lib/aws-certificatemanager").ICertificate;
   /** Create the recipe-image bucket 1:1 with the original s3-bucket.yaml (default true). If false, reuse an existing bucket named appConfig.s3BucketName. */
   readonly createImageBucket?: boolean;
   /** CORS AllowedOrigins for the image bucket (uploads). */
@@ -109,6 +113,29 @@ export class ApiStack extends Stack {
         })
       : s3.Bucket.fromBucketName(this, 'ImageBucket', props.appConfig.s3BucketName);
 
+    // ---- Allow the media CloudFront distribution (OAC) to read image objects ----
+    // The distribution lives in the separate JustCookingMedia stack, so to avoid a
+    // cross-stack cycle we grant the CloudFront service principal read access
+    // scoped by AWS:SourceArn to any distribution in THIS account. The imported
+    // bucket in the media stack cannot take a CDK-managed policy, so it is applied
+    // here on the bucket where it is defined.
+    if (createBucket) {
+      (imageBucket as s3.Bucket).addToResourcePolicy(
+        new iam.PolicyStatement({
+          sid: 'AllowCloudFrontOACGetObject',
+          effect: iam.Effect.ALLOW,
+          principals: [new iam.ServicePrincipal('cloudfront.amazonaws.com')],
+          actions: ['s3:GetObject'],
+          resources: [`${imageBucket.bucketArn}/*`],
+          conditions: {
+            StringLike: {
+              'AWS:SourceArn': `arn:aws:cloudfront::${this.account}:distribution/*`,
+            },
+          },
+        }),
+      );
+    }
+
     // ---- KMS key for the CustomEmailSender (Cognito encrypts the code with it) ----
     const emailKey = new kms.Key(this, 'EmailSenderKey', {
       alias: 'justcooking-kms',
@@ -176,6 +203,19 @@ export class ApiStack extends Stack {
     userPool.addDomain('HostedUiDomain', {
       cognitoDomain: { domainPrefix: props.cognitoDomainPrefix },
     });
+
+    // Optional Cognito CUSTOM domain (idp-dev.justcook.ing) alongside the prefix
+    // domain, 1:1 with the original which defined both. Needs a us-east-1 cert.
+    let cognitoCustomDomainTarget: string | undefined;
+    if (props.cognitoCustomDomain && props.cognitoCustomDomainCert) {
+      const customDomain = userPool.addDomain("CustomHostedUiDomain", {
+        customDomain: {
+          domainName: props.cognitoCustomDomain,
+          certificate: props.cognitoCustomDomainCert,
+        },
+      });
+      cognitoCustomDomainTarget = customDomain.cloudFrontEndpoint;
+    }
 
     let googleIdp: cognito.UserPoolIdentityProviderGoogle | undefined;
     if (props.googleClientIdParam && props.googleClientSecret) {
@@ -306,6 +346,13 @@ export class ApiStack extends Stack {
     new CfnOutput(this, 'UserPoolClientId', { value: client.userPoolClientId });
     new CfnOutput(this, 'CognitoHostedUiDomain', { value: cognitoDomain });
     new CfnOutput(this, 'EmailKmsKeyArn', { value: emailKey.keyArn });
+    if (cognitoCustomDomainTarget) {
+      new CfnOutput(this, "CognitoCustomDomainTarget", {
+        value: cognitoCustomDomainTarget,
+        description:
+          "Add a Cloudflare DNS-only CNAME: idp-dev.justcook.ing -> this value",
+      });
+    }
   }
 }
 

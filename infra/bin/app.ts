@@ -6,6 +6,8 @@ import {
   defaultServerAssetPath,
   defaultEmailSenderAssetPath,
 } from '../lib/api-stack.js';
+import { MediaCertStack } from '../lib/media-cert-stack.js';
+import { MediaStack } from '../lib/media-stack.js';
 
 const app = new App();
 
@@ -66,8 +68,32 @@ const resendApiKey = app.node.tryGetContext('resendApiKey') as
   | string
   | undefined;
 
+// ---- Media / custom-domain config ----
+// Custom domains for the media CDN and the Cognito hosted UI. DNS is in
+// Cloudflare; the cert is issued in us-east-1 (CloudFront + Cognito requirement).
+const mediaDomain =
+  (app.node.tryGetContext('mediaDomain') as string | undefined) ??
+  'media-dev.justcook.ing';
+const cognitoCustomDomain = app.node.tryGetContext('cognitoCustomDomain') as
+  | string
+  | undefined; // e.g. idp-dev.justcook.ing — enables the Cognito custom domain when set
+// Known name of the image bucket created by JustCookingApi (RETAIN'd).
+const imageBucketName =
+  (app.node.tryGetContext('imageBucketName') as string | undefined) ??
+  'justcookingapi-imagebucket97210811-tj9hed7vwenq';
+
+// us-east-1 ACM cert covering both custom domains (only the domains actually used).
+const certDomains = [mediaDomain, ...(cognitoCustomDomain ? [cognitoCustomDomain] : [])];
+const certStack = new MediaCertStack(app, 'JustCookingMediaCert', {
+  env: { account, region: 'us-east-1' },
+  crossRegionReferences: true,
+  domainNames: certDomains,
+  description: 'JustCooking ACM cert (us-east-1) for media + Cognito custom domains',
+});
+
 new ApiStack(app, 'JustCookingApi', {
   env: { account, region },
+  crossRegionReferences: true,
   serverAssetPath,
   emailSenderAssetPath,
   ssmParamNames,
@@ -79,12 +105,16 @@ new ApiStack(app, 'JustCookingApi', {
   callbackUrls,
   logoutUrls,
   cognitoDomainPrefix,
+  cognitoCustomDomain,
+  cognitoCustomDomainCert: cognitoCustomDomain ? certStack.certificate : undefined,
   appConfig: {
     s3BucketName: (app.node.tryGetContext('s3BucketName') as string) ?? '',
     webAppUri:
       (app.node.tryGetContext('webAppUri') as string) ?? appUrls[0],
     apiAppUri: (app.node.tryGetContext('apiAppUri') as string) ?? '',
-    mediaUri: (app.node.tryGetContext('mediaUri') as string) ?? '',
+    mediaUri:
+      (app.node.tryGetContext('mediaUri') as string) ??
+      (mediaDomain ? `https://${mediaDomain}` : ''),
     cookieDomain: (app.node.tryGetContext('cookieDomain') as string) ?? '',
     sessionDbName:
       (app.node.tryGetContext('sessionDbName') as string) ?? 'justcooking',
@@ -94,4 +124,15 @@ new ApiStack(app, 'JustCookingApi', {
   },
   description:
     'JustCooking API + Cognito (1:1 with original CFN) — Express on LWA + Function URL, custom email sender',
+});
+
+new MediaStack(app, 'JustCookingMedia', {
+  env: { account, region },
+  crossRegionReferences: true,
+  imageBucketName,
+  mediaDomain,
+  certificate: certStack.certificate,
+  description:
+    'JustCooking media CloudFront (OAC) fronting the image bucket at ' +
+    mediaDomain,
 });
