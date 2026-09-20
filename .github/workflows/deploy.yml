@@ -44,6 +44,9 @@ jobs:
           role-to-assume: arn:aws:iam::276663280738:role/github-deploy-server
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Install server deps (build-lambda runs `npm run build` in the server root)
+        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+
       - name: Install infra deps
         working-directory: infra
         run: npm ci || npm install
