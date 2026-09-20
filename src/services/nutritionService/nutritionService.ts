@@ -1,6 +1,8 @@
 import {
   ConverseCommand,
   BedrockRuntimeClient,
+  ConverseCommandOutput,
+  Tool,
 } from '@aws-sdk/client-bedrock-runtime';
 import { Logger } from 'winston';
 
@@ -9,6 +11,7 @@ import { bedrockClient } from '@/auth/bedrock';
 // EU cross-region inference profile — the bare `anthropic.` id is NOT
 // on-demand invokable in eu-west-2.
 const MODEL_ID = 'eu.anthropic.claude-haiku-4-5-20251001-v1:0';
+const MAX_ATTEMPTS = 3;
 
 export interface NutritionServiceConfig {
   logger: Logger;
@@ -31,7 +34,7 @@ export interface NutritionEstimateInput {
 
 /**
  * Nutrition block aligned to the EXISTING recipe model `Nutrition` interface
- * (kcal, sugars, salt, carbs, protein, fat, saturates, fibre) — per serving.
+ * (kcal, sugars, salt, carbs, protein, fat, saturates, fibre).
  */
 export interface NutritionValues {
   kcal: number;
@@ -52,7 +55,7 @@ export interface NutritionEstimate {
   confidence: 'low' | 'medium' | 'high';
 }
 
-const NUM_KEYS: (keyof NutritionValues)[] = [
+const NUM_KEYS = [
   'kcal',
   'protein',
   'carbs',
@@ -63,6 +66,45 @@ const NUM_KEYS: (keyof NutritionValues)[] = [
   'salt',
 ];
 
+// JSON schema for one set of nutrition values (all numbers, grams except kcal).
+const valuesSchema = {
+  type: 'object',
+  properties: NUM_KEYS.reduce<Record<string, unknown>>((acc, k) => {
+    acc[k] = { type: 'number', description: k === 'kcal' ? 'energy in kcal' : `${k} in grams` };
+    return acc;
+  }, {}),
+  required: NUM_KEYS,
+};
+
+// Tool the model MUST call — this is how we force structured output instead of
+// free text we have to parse/fence-strip.
+const NUTRITION_TOOL: Tool = {
+  toolSpec: {
+    name: 'record_nutrition',
+    description:
+      'Record the estimated nutrition for the recipe (UK conventions: kcal, salt in grams, fibre).',
+    inputSchema: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      json: {
+        type: 'object',
+        properties: {
+          perServing: valuesSchema,
+          perRecipe: valuesSchema,
+          servings: { type: 'number' },
+          assumptions: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Portion sizes / substitutions assumed while estimating',
+          },
+          confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
+        },
+        required: ['perServing', 'perRecipe', 'servings', 'assumptions', 'confidence'],
+        // The SDK types this as DocumentType; the JSON schema is fine at runtime.
+      } as any,
+    },
+  },
+};
+
 export class NutritionServiceError extends Error {
   constructor(
     message: string,
@@ -72,6 +114,8 @@ export class NutritionServiceError extends Error {
     this.name = 'NutritionServiceError';
   }
 }
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export class NutritionService {
   private logger: Logger;
@@ -97,21 +141,11 @@ export class NutritionService {
 
     return [
       'You are a nutrition estimator for a UK recipe app.',
-      'Estimate the nutritional content of the recipe below.',
-      'Work step by step: estimate each ingredient individually, then total them, then divide by the number of servings.',
+      'Estimate each ingredient individually, then total them, then divide by the number of servings.',
       'Use UK conventions: energy in kcal, salt (not sodium) in grams, "fibre".',
-      'State the assumptions you make (portion sizes, fat content, etc.).',
-      'If you are unsure, still give your best estimate but lower the confidence.',
-      '',
-      'Return ONLY a JSON object (no markdown, no prose) with this exact shape:',
-      '{',
-      '  "perServing": { "kcal": n, "protein": n, "carbs": n, "fat": n, "saturates": n, "fibre": n, "sugars": n, "salt": n },',
-      '  "perRecipe":  { "kcal": n, "protein": n, "carbs": n, "fat": n, "saturates": n, "fibre": n, "sugars": n, "salt": n },',
-      '  "servings": n,',
-      '  "assumptions": ["..."],',
-      '  "confidence": "low" | "medium" | "high"',
-      '}',
-      'All macro values are grams except kcal. Numbers only (no units in the values).',
+      'State the assumptions you make (portion sizes, fat content, substitutions).',
+      'If unsure, still give your best estimate but lower the confidence.',
+      'Call the record_nutrition tool with your result. All macro values are grams except kcal.',
       '',
       `Recipe: ${input.name || 'Untitled recipe'}. Servings: ${input.servings}.`,
       'Ingredients:',
@@ -122,31 +156,27 @@ export class NutritionService {
   private coerceValues(raw: unknown): NutritionValues {
     const obj = (raw ?? {}) as Record<string, unknown>;
     const out = {} as NutritionValues;
-    for (const k of NUM_KEYS) {
+    for (const k of NUM_KEYS as (keyof NutritionValues)[]) {
       const v = Number(obj[k]);
       out[k] = Number.isFinite(v) ? Math.max(0, Math.round(v * 10) / 10) : 0;
     }
     return out;
   }
 
-  private parseResponse(text: string, servings: number): NutritionEstimate {
-    // Strip markdown fences if the model wrapped the JSON.
-    const cleaned = text
-      .replace(/^```(?:json)?\s*/i, '')
-      .replace(/```\s*$/i, '')
-      .trim();
-    // Grab the outermost JSON object if there is leading/trailing prose.
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    if (start === -1 || end === -1 || end <= start) {
-      throw new NutritionServiceError('Model did not return JSON', 502);
+  private extractToolInput(res: ConverseCommandOutput): Record<string, unknown> {
+    const blocks = res.output?.message?.content ?? [];
+    for (const b of blocks) {
+      if (b.toolUse?.name === 'record_nutrition' && b.toolUse.input) {
+        return b.toolUse.input as Record<string, unknown>;
+      }
     }
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(cleaned.slice(start, end + 1));
-    } catch {
-      throw new NutritionServiceError('Model returned invalid JSON', 502);
-    }
+    throw new NutritionServiceError('Model did not return structured nutrition', 502);
+  }
+
+  private toEstimate(
+    parsed: Record<string, unknown>,
+    servings: number,
+  ): NutritionEstimate {
     const conf = String(parsed.confidence || 'medium').toLowerCase();
     return {
       perServing: this.coerceValues(parsed.perServing),
@@ -164,26 +194,38 @@ export class NutritionService {
   async estimate(input: NutritionEstimateInput): Promise<NutritionEstimate> {
     const command = new ConverseCommand({
       modelId: MODEL_ID,
-      messages: [
-        {
-          role: 'user',
-          content: [{ text: this.buildPrompt(input) }],
-        },
-      ],
-      inferenceConfig: { maxTokens: 900, temperature: 0 },
+      messages: [{ role: 'user', content: [{ text: this.buildPrompt(input) }] }],
+      toolConfig: {
+        tools: [NUTRITION_TOOL],
+        // Force the model to call our tool -> guaranteed structured output.
+        toolChoice: { tool: { name: 'record_nutrition' } },
+      },
+      inferenceConfig: { maxTokens: 1024, temperature: 0 },
     });
 
-    let text: string | undefined;
-    try {
-      const res = await this.client.send(command);
-      text = res.output?.message?.content?.[0]?.text;
-    } catch (error) {
-      this.logger.error('Bedrock nutrition estimate failed:', error);
-      throw new NutritionServiceError('Nutrition estimation is unavailable', 502);
+    let lastErr: unknown;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const res = await this.client.send(command);
+        const parsed = this.extractToolInput(res);
+        return this.toEstimate(parsed, input.servings);
+      } catch (error) {
+        lastErr = error;
+        const retriable =
+          !(error instanceof NutritionServiceError) ||
+          error.statusCode >= 500;
+        this.logger.warn(
+          `nutrition estimate attempt ${attempt}/${MAX_ATTEMPTS} failed: ${error}`,
+        );
+        if (attempt < MAX_ATTEMPTS && retriable) {
+          await sleep(300 * attempt); // linear backoff: 300ms, 600ms
+          continue;
+        }
+        break;
+      }
     }
-    if (!text) {
-      throw new NutritionServiceError('Empty response from nutrition model', 502);
-    }
-    return this.parseResponse(text, input.servings);
+    this.logger.error('Bedrock nutrition estimate failed after retries:', lastErr);
+    if (lastErr instanceof NutritionServiceError) throw lastErr;
+    throw new NutritionServiceError('Nutrition estimation is unavailable', 502);
   }
 }
