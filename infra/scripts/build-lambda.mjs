@@ -37,7 +37,7 @@ if (existsSync(path.join(server, 'package-lock.json'))) {
 }
 
 console.log('▶ installing prod deps in lambda-dist…');
-run('npm install --omit=dev --no-audit --no-fund', out);
+run('npm install --omit=dev --legacy-peer-deps --no-audit --no-fund', out);
 
 console.log('▶ adding LWA run.sh…');
 cpSync(path.join(infra, 'lambda', 'run.sh'), path.join(out, 'run.sh'));

@@ -12,7 +12,8 @@
     "diff": "cdk diff",
     "deploy": "cdk deploy",
     "destroy": "cdk destroy",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:lambda": "node scripts/build-lambda.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.9.0",
