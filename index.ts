@@ -130,6 +130,22 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   });
   next();
 });
+// Ensure a LIVE Mongo connection before handling any API request. On warm
+// Lambda containers the module-scoped connection's socket can die during the
+// freeze while readyState still reads "connected"; connectDB() actively pings
+// and reconnects if the socket is dead, so session lookups / queries don't hang
+// 30s on a stale topology. Fails fast (serverSelectionTimeoutMS 5s) -> 503.
+app.use('/api', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await dbConnection.connectDB();
+    next();
+  } catch (err) {
+    config
+      .newLogger(logLevel, 'database')
+      .error(`DB unavailable for ${req.method} ${req.url}: ${err}`);
+    res.status(503).json({ message: 'Service temporarily unavailable' });
+  }
+});
 // Routes
 app.use('/api', apiRoutes(config));
 
