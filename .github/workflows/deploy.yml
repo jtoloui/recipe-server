@@ -33,6 +33,11 @@ jobs:
         with:
           node-version: '20'
 
+      # The server's prebuild/build scripts invoke `bun` (matches local build).
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Configure AWS credentials (OIDC, no static keys)
         uses: aws-actions/configure-aws-credentials@v4
         with:
