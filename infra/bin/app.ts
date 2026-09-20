@@ -184,10 +184,21 @@ new ApiStack(app, `JustCookingApi${Env}`, {
     'JustCooking API + Cognito (1:1 with original CFN) — Express on LWA + Function URL, custom email sender',
 });
 
+// Web origins allowed to load media images cross-origin. The SPA runs at
+// webAppUri (prod: https://www.justcook.ing); localhost is kept for local dev.
+const mediaWebOrigin =
+  (app.node.tryGetContext('webAppUri') as string | undefined) ??
+  (feDomain ? `https://${feDomain}` : appUrls[0]);
+const mediaCorsOrigins = Array.from(
+  new Set([mediaWebOrigin, 'https://localhost:3000'].filter(Boolean)),
+) as string[];
+
 new MediaStack(app, `JustCookingMedia${Env}`, {
   env: { account, region },
   imageBucketName,
+  envName: env,
   mediaDomain,
+  allowedCorsOrigins: mediaCorsOrigins,
   certificateArn: certArnForImport,
   description:
     'JustCooking media CloudFront (OAC) fronting the image bucket at ' +

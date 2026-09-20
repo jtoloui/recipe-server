@@ -14,6 +14,8 @@ import { Construct } from 'constructs';
 export interface MediaStackProps extends StackProps {
   /** Name of the existing recipe-image bucket (created by JustCookingApi). */
   readonly imageBucketName: string;
+  /** Deployment env ('dev'|'prod') — keeps the CachePolicy name unique per env. */
+  readonly envName: string;
   /** Alias for the media CloudFront distribution, e.g. media-dev.justcook.ing. */
   readonly mediaDomain: string;
   /**
@@ -21,6 +23,11 @@ export interface MediaStackProps extends StackProps {
    * requirement). Passed as a cross-region reference from MediaCertStack.
    */
   readonly certificateArn: string;
+  /**
+   * Web origins allowed to fetch images cross-origin (CORS
+   * Access-Control-Allow-Origin). e.g. ['https://www.justcook.ing'].
+   */
+  readonly allowedCorsOrigins: string[];
 }
 
 /**
@@ -29,6 +36,10 @@ export interface MediaStackProps extends StackProps {
  *  - Fronts the existing recipe-image S3 bucket at media-dev.justcook.ing.
  *  - Custom cache policy: Brotli+Gzip, whitelist Origin / ACRM / ACRH headers,
  *    no cookies, no query strings (matches the original ParametersInCacheKey).
+ *  - Response-headers policy attaches CORS (Access-Control-Allow-Origin) so the
+ *    SPA at www.justcook.ing can load images cross-origin. With OAC the S3
+ *    bucket CORS rules do not reliably reach the viewer, so CORS is emitted at
+ *    the CloudFront edge instead.
  *  - GET/HEAD/OPTIONS, redirect-to-https, TLS1.2_2021 sni-only.
  *
  * The bucket is imported (it lives in JustCookingApi and is RETAIN'd), so per the
@@ -47,7 +58,7 @@ export class MediaStack extends Stack {
 
     // Cache policy 1:1 with the original CloudFrontCacheKeyPolicy.
     const cachePolicy = new cloudfront.CachePolicy(this, 'MediaCachePolicy', {
-      cachePolicyName: `${props.imageBucketName}-CachePolicy`,
+      cachePolicyName: `justcooking-media-${props.envName}-CachePolicy`,
       comment: 'Cache policy for JustCooking media',
       defaultTtl: Duration.seconds(86400),
       maxTtl: Duration.seconds(31536000),
@@ -62,6 +73,26 @@ export class MediaStack extends Stack {
         'Access-Control-Request-Headers',
       ),
     });
+
+    // Response-headers policy: emit CORS from the CloudFront edge. With OAC the
+    // S3 bucket CORS rules don't reliably surface to the viewer, so the images
+    // must carry Access-Control-Allow-Origin from CloudFront itself, else the
+    // SPA (a different origin, www.justcook.ing) is blocked by the browser.
+    const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(
+      this,
+      'MediaResponseHeadersPolicy',
+      {
+        responseHeadersPolicyName: `justcooking-media-${props.envName}-CORS`,
+        comment: 'CORS for JustCooking media images',
+        corsBehavior: {
+          accessControlAllowCredentials: false,
+          accessControlAllowHeaders: ['*'],
+          accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS'],
+          accessControlAllowOrigins: props.allowedCorsOrigins,
+          originOverride: true,
+        },
+      },
+    );
 
     // OAC origin — auto-creates the OAC. Bucket is imported so we attach the
     // bucket policy ourselves below.
@@ -80,6 +111,7 @@ export class MediaStack extends Stack {
         cachedMethods: cloudfront.CachedMethods.CACHE_GET_HEAD_OPTIONS,
         compress: true,
         cachePolicy,
+        responseHeadersPolicy,
       },
     });
 

@@ -6,6 +6,7 @@ lambda-dist/
 !scripts/*.mjs
 .env
 secrets.env
+*.err
 
 # email lambda: keep source, ignore installed deps
 lambda-email/node_modules/
