@@ -17,17 +17,34 @@ class DBConnection {
   }
 
   async connectDB(): Promise<this> {
+    // On Lambda the container is reused across invocations, so reuse an existing
+    // live connection instead of dialing again (readyState 1 = connected,
+    // 2 = connecting). Re-dialing per request, or exiting the process on a
+    // transient cold-start timeout, caused Runtime.ExitError -> 502 on the first
+    // hit to a cold container.
+    const state = mongoose.connection.readyState;
+    if (state === 1 || state === 2) {
+      return this;
+    }
     try {
       await mongoose.connect(this.cfg.mongoUri, {
         autoCreate: true,
-        dbName: 'recipe',
+        dbName: this.cfg.mongoDbName,
         appName: 'recipe-api',
+        // Serverless-friendly: wait for a node to be selected on a cold start
+        // rather than failing fast, and keep the pool small.
+        serverSelectionTimeoutMS: 10000,
+        connectTimeoutMS: 10000,
+        maxPoolSize: 5,
       });
       this.winstonLogger.info('MongoDB connected successfully');
-      return this; // Enable method chaining
+      return this;
     } catch (error) {
+      // Do NOT process.exit on Lambda — that kills the container and returns a
+      // 502. Throw so this invocation fails cleanly while the container (and a
+      // future retry / warm connection) survives.
       this.winstonLogger.error('Error connecting to MongoDB:', error);
-      process.exit(1);
+      throw error;
     }
   }
 
@@ -42,8 +59,10 @@ class DBConnection {
       });
       this.store.all((error, sessions) => {
         if (error) {
+          // Log but do not exit the process — a transient session-store read
+          // error must not kill the Lambda container.
           this.winstonLogger.error(error);
-          process.exit(1);
+          return;
         }
         if (sessions) {
           this.winstonLogger.info('MongoDB session store connected');

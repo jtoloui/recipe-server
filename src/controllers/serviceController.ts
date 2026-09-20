@@ -24,19 +24,30 @@ export class ServiceController implements Service {
     this.response = new ResponseHandler({ logger: this.logger });
   }
 
-  getHealth = async (req: Request, res: Response) => {
-    try {
-      const projectPath = process.env.NODE_ENV === 'production' ? 'out' : '';
-      const projectRoot = path.resolve(__dirname, `../../${projectPath}`);
-
-      const buildInfoString = fs.readFileSync(path.resolve(projectRoot, 'build-info.json'), 'utf8');
-
-      const buildInfo: BuildInfo = JSON.parse(buildInfoString);
-
-      return this.response.sendSuccess(res, buildInfo);
-    } catch (error) {
-      this.logger.error(`Request ID: ${req.id} - Session ID: ${req.sessionID} - ${error}`);
-      return this.response.sendError(res, 500, 'Error retrieving health');
+  private readBuildInfo(): BuildInfo | null {
+    // build-info.json is written next to the compiled output (dist/). Try a
+    // couple of known locations and tolerate absence — a health check must not
+    // fail just because build metadata isn't packaged.
+    const candidates = [
+      path.resolve(__dirname, '../../build-info.json'), // dist/build-info.json (prebuild.js)
+      path.resolve(__dirname, '../../out/build-info.json'), // legacy location
+      path.resolve(process.cwd(), 'dist/build-info.json'),
+    ];
+    for (const p of candidates) {
+      try {
+        return JSON.parse(fs.readFileSync(p, 'utf8')) as BuildInfo;
+      } catch {
+        // try next
+      }
     }
+    return null;
+  }
+
+  getHealth = async (req: Request, res: Response) => {
+    const buildInfo = this.readBuildInfo();
+    return this.response.sendSuccess(res, {
+      status: 'ok',
+      ...(buildInfo ?? {}),
+    });
   };
 }

@@ -1,0 +1,13 @@
+node_modules/
+cdk.out/
+lambda-dist/
+*.d.ts
+*.js
+!scripts/*.mjs
+.env
+secrets.env
+*.err
+
+# email lambda: keep source, ignore installed deps
+lambda-email/node_modules/
+!lambda-email/index.js
