@@ -20,6 +20,12 @@ interface Nutrition {
   fibre?: number | null;
 }
 
+interface NutritionMeta {
+  servings?: number | null;
+  source?: string | null; // e.g. 'ai-haiku' | 'manual'
+  estimatedAt?: Date | null;
+}
+
 interface Ingredient {
   item: string;
   measurement: string;
@@ -50,7 +56,9 @@ export interface RecipeAttributes {
   labels: string[];
   portions: string;
   description: string;
-  nutrition: Nutrition | undefined;
+  nutrition: Nutrition | undefined; // per serving (existing convention)
+  nutritionPerRecipe?: Nutrition | null; // whole-recipe totals
+  nutritionMeta?: NutritionMeta | null;
   ingredients: Ingredient[];
   steps: string[];
   vegan: boolean;
@@ -141,6 +149,18 @@ const nutritionSchema = new Schema<Nutrition>(
   },
 );
 
+const nutritionMetaSchema = new Schema<NutritionMeta>(
+  {
+    servings: Number,
+    source: String,
+    estimatedAt: Date,
+  },
+  {
+    toJSON: { virtuals: false, transform: function (doc, ret) { delete ret._id; } },
+    toObject: { virtuals: false, transform: function (doc, ret) { delete ret._id; } },
+  },
+);
+
 const ingredientSchema = new Schema<Ingredient>(
   {
     item: String,
@@ -224,6 +244,8 @@ const recipeSchema = new Schema<Recipe>(
     portions: { type: String, required: true },
     description: { type: String, required: true },
     nutrition: { type: nutritionSchema, required: false, default: null },
+    nutritionPerRecipe: { type: nutritionSchema, required: false, default: null },
+    nutritionMeta: { type: nutritionMetaSchema, required: false, default: null },
     vegan: { type: Boolean, required: false },
     vegetarian: { type: Boolean, required: false },
     ingredients: { type: [ingredientSchema], required: true },

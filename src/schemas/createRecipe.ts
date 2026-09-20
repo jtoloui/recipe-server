@@ -73,6 +73,25 @@ export const createRecipeSchema = z.object({
       fibre: z.number().optional().nullable().nullish(),
     }),
   ),
+  nutritionFactsPerRecipe: z.optional(
+    z.object({
+      kcal: z.number().optional().nullable().nullish(),
+      sugars: z.number().optional().nullable().nullish(),
+      salt: z.number().optional().nullable().nullish(),
+      carbs: z.number().optional().nullable().nullish(),
+      protein: z.number().optional().nullable().nullish(),
+      fat: z.number().optional().nullable().nullish(),
+      saturates: z.number().optional().nullable().nullish(),
+      fibre: z.number().optional().nullable().nullish(),
+    }),
+  ),
+  nutritionMeta: z.optional(
+    z.object({
+      servings: z.number().optional().nullable().nullish(),
+      source: z.string().optional().nullable().nullish(),
+      estimatedAt: z.union([z.string(), z.date()]).optional().nullable().nullish(),
+    }),
+  ),
   labels: z.array(z.string().min(1, 'Must have at least one label')),
   visibility: z.enum(['public', 'private'], {
     errorMap: (error) => {
@@ -116,6 +135,16 @@ export function convertRecipeZodToMongo(
     portions: formData.portionSize.toString(),
     description: formData.recipeDescription,
     nutrition: formData.nutritionFacts,
+    nutritionPerRecipe: formData.nutritionFactsPerRecipe ?? null,
+    nutritionMeta: formData.nutritionMeta
+      ? {
+          servings: formData.nutritionMeta.servings ?? null,
+          source: formData.nutritionMeta.source ?? null,
+          estimatedAt: formData.nutritionMeta.estimatedAt
+            ? new Date(formData.nutritionMeta.estimatedAt)
+            : null,
+        }
+      : null,
     ingredients: formData.ingredients,
     steps: formData.steps.map((step) => step.step),
     vegan: formData.vegan,
