@@ -340,6 +340,22 @@ export class ApiStack extends Stack {
 
     imageBucket.grantReadWrite(fn);
 
+    // The API calls cognito-idp:AdminGetUser (isAuthenticated) against the pool
+    // using the Lambda role. Without this grant the SDK call is rejected with
+    // "The security token included in the request is invalid."
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:AdminUserGlobalSignOut",
+          "cognito-idp:AdminInitiateAuth",
+          "cognito-idp:AdminRespondToAuthChallenge",
+        ],
+        resources: [userPool.userPoolArn],
+      }),
+    );
+
     // CORS is handled by the Express app (src/utils/cors.ts, credentialed +
     // keyed to WEB_APP_URI). Do NOT also set CORS on the Function URL, or both
     // layers emit Access-Control-Allow-Origin and the browser rejects the pair.
