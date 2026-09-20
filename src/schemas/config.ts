@@ -24,6 +24,8 @@ export const ConfigSchema = z.object({
   newLogger: newLoggerSchema,
   webAppUri: z.string().url(),
   apiAppUri: z.string().url(),
-  mediaUri: z.string().url(),
+  // Media CloudFront (media-dev.justcook.ing) not built yet; allow empty so the
+  // API boots without it. Validates as a URL only when a value is present.
+  mediaUri: z.union([z.literal(""), z.string().url()]).default(""),
   sessionSecret: z.string().min(1),
 });

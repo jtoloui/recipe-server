@@ -138,7 +138,7 @@ export class ApiStack extends Stack {
     });
 
     // ---- Cognito user pool (1:1 with original CFN) ----
-    const userPool = new cognito.UserPool(this, 'UserPool', {
+    const userPool = new cognito.UserPool(this, 'UserPoolV2', {
       userPoolName: 'justcooking',
       selfSignUpEnabled: true,
       // Original used AliasAttributes email + preferred_username, case-insensitive.
@@ -189,6 +189,11 @@ export class ApiStack extends Stack {
           givenName: cognito.ProviderAttribute.GOOGLE_GIVEN_NAME,
           familyName: cognito.ProviderAttribute.GOOGLE_FAMILY_NAME,
           fullname: cognito.ProviderAttribute.GOOGLE_NAME,
+          // 1:1 with original CFN: Cognito requires every REQUIRED standard attr
+          // be mapped from each federated IdP; Google has no zoneinfo/updated_at,
+          // so the original maps both to the throwaway "expires_in" claim.
+          timezone: cognito.ProviderAttribute.other("expires_in"),
+          lastUpdateTime: cognito.ProviderAttribute.other("expires_in"),
         },
       });
     }
