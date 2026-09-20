@@ -543,16 +543,13 @@ export class AuthController implements Auth {
         return res.status(200).json({ isAuthenticated: false });
       }
 
+      // Validate the session from the signed ID token (expiry). This avoids an
+      // AWS-credentialed adminGetUser call on every auth check — that call was
+      // failing on Lambda with UnrecognizedClientException and is unnecessary:
+      // the token is Cognito-signed and short-lived, and refresh handles renewal.
       const isExpired = this.isExpired(sessionToken);
 
-      const params = {
-        UserPoolId: poolData.UserPoolId,
-        Username: req.session?.user?.username,
-      };
-
-      const user = await this.client.adminGetUser(params);
-
-      if (!user.Enabled) {
+      if (isExpired) {
         req.session.destroy((err) => {
           if (err) {
             this.logger.error('Error destroying session:', err);
@@ -560,19 +557,9 @@ export class AuthController implements Auth {
           }
         });
         return res.status(200).json({ isAuthenticated: false });
-      } else {
-        if (isExpired) {
-          req.session.destroy((err) => {
-            if (err) {
-              this.logger.error('Error destroying session:', err);
-              return res.status(500).json({ isAuthenticated: false });
-            }
-          });
-          return res.status(200).json({ isAuthenticated: false });
-        } else {
-          return res.status(200).json({ isAuthenticated: true });
-        }
       }
+
+      return res.status(200).json({ isAuthenticated: true });
     } catch (error) {
       this.logger.error('Error getting tokens:', error);
       req.session.destroy((err) => {
