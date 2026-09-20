@@ -13,6 +13,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as kms from 'aws-cdk-lib/aws-kms';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as logs from 'aws-cdk-lib/aws-logs';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
 export interface ApiStackProps extends StackProps {
@@ -34,6 +35,10 @@ export interface ApiStackProps extends StackProps {
   /** Cognito logout URLs. */
   readonly logoutUrls: string[];
   readonly cognitoDomainPrefix: string;
+  /** Create the recipe-image bucket 1:1 with the original s3-bucket.yaml (default true). If false, reuse an existing bucket named appConfig.s3BucketName. */
+  readonly createImageBucket?: boolean;
+  /** CORS AllowedOrigins for the image bucket (uploads). */
+  readonly imageBucketCorsOrigins?: string[];
   readonly appConfig: {
     s3BucketName: string;
     webAppUri: string;
@@ -58,6 +63,51 @@ export interface ApiStackProps extends StackProps {
 export class ApiStack extends Stack {
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
+
+    // ---- Recipe image bucket (1:1 with original s3-bucket.yaml) ----
+    // Private, versioned, SSE-S3 + bucket keys, all public access blocked, CORS
+    // for browser uploads, and a 30-day noncurrent-version expiry on images/.
+    const createBucket = props.createImageBucket ?? true;
+    const imageBucket = createBucket
+      ? new s3.Bucket(this, 'ImageBucket', {
+          bucketName: props.appConfig.s3BucketName || undefined,
+          blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+          encryption: s3.BucketEncryption.S3_MANAGED,
+          bucketKeyEnabled: true,
+          versioned: true,
+          enforceSSL: true,
+          cors: [
+            {
+              id: 'myCORSRuleId1',
+              allowedHeaders: ['x-amz-*'],
+              allowedMethods: [
+                s3.HttpMethods.GET,
+                s3.HttpMethods.PUT,
+                s3.HttpMethods.POST,
+                s3.HttpMethods.DELETE,
+                s3.HttpMethods.HEAD,
+              ],
+              allowedOrigins: props.imageBucketCorsOrigins ?? props.appUrls,
+              exposedHeaders: [
+                'x-amz-server-side-encryption',
+                'x-amz-request-id',
+                'x-amz-id-2',
+              ],
+              maxAge: 3600,
+            },
+          ],
+          lifecycleRules: [
+            {
+              id: 'Delete images after 30 days',
+              prefix: 'images/',
+              enabled: true,
+              noncurrentVersionExpiration: Duration.days(30),
+              noncurrentVersionsToRetain: 3,
+            },
+          ],
+          removalPolicy: RemovalPolicy.RETAIN,
+        })
+      : s3.Bucket.fromBucketName(this, 'ImageBucket', props.appConfig.s3BucketName);
 
     // ---- KMS key for the CustomEmailSender (Cognito encrypts the code with it) ----
     const emailKey = new kms.Key(this, 'EmailSenderKey', {
@@ -204,7 +254,7 @@ export class ApiStack extends Stack {
         COOKIE_DOMAIN: props.appConfig.cookieDomain,
         MONGODB_SESSION_DB: props.appConfig.sessionDbName,
         MONGODB_SESSION_COLLECTION: props.appConfig.sessionCollection,
-        AWS_S3_BUCKET_NAME: props.appConfig.s3BucketName,
+        AWS_S3_BUCKET_NAME: imageBucket.bucketName,
         LOG_LEVEL: props.appConfig.logLevel,
       },
     });
@@ -234,22 +284,7 @@ export class ApiStack extends Stack {
       );
     }
 
-    if (props.appConfig.s3BucketName) {
-      fn.addToRolePolicy(
-        new iam.PolicyStatement({
-          actions: [
-            's3:PutObject',
-            's3:GetObject',
-            's3:DeleteObject',
-            's3:ListBucket',
-          ],
-          resources: [
-            `arn:aws:s3:::${props.appConfig.s3BucketName}`,
-            `arn:aws:s3:::${props.appConfig.s3BucketName}/*`,
-          ],
-        })
-      );
-    }
+    imageBucket.grantReadWrite(fn);
 
     const fnUrl = fn.addFunctionUrl({
       authType: lambda.FunctionUrlAuthType.NONE,
