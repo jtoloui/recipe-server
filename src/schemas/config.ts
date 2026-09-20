@@ -7,6 +7,7 @@ export const ConfigSchema = z.object({
   port: z.string(),
   logLevel: z.enum(['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly']).default('info'),
   mongoUri: z.string().min(1),
+  mongoDbName: z.string().min(1).default('justcooking-dev'),
   sessionDBName: z.string().min(1),
   sessionCollection: z.string().min(1),
   awsRegion: z.string().min(1),

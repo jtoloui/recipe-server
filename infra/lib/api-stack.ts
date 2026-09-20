@@ -21,6 +21,8 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
 export interface ApiStackProps extends StackProps {
+  /** Deployment environment ('dev' | 'prod') — suffixes/keys env-specific resources. */
+  readonly envName: string;
   readonly serverAssetPath: string;
   readonly ssmParamNames: string[];
   readonly ssmSecretsEnv: Record<string, string>;
@@ -75,6 +77,8 @@ export interface ApiStackProps extends StackProps {
 export class ApiStack extends Stack {
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
+    
+        const envName = props.envName;
 
     // ---- Recipe image bucket (1:1 with original s3-bucket.yaml) ----
     // Private, versioned, SSE-S3 + bucket keys, all public access blocked, CORS
@@ -146,7 +150,7 @@ export class ApiStack extends Stack {
 
     // ---- KMS key for the CustomEmailSender (Cognito encrypts the code with it) ----
     const emailKey = new kms.Key(this, 'EmailSenderKey', {
-      alias: 'justcooking-kms',
+      alias: `justcooking-${envName}-kms`,
       description: 'JustCooking Cognito custom email sender code encryption',
       enableKeyRotation: true,
       removalPolicy: RemovalPolicy.RETAIN,
@@ -162,7 +166,7 @@ export class ApiStack extends Stack {
       logRetention: logs.RetentionDays.ONE_MONTH,
       environment: {
         KEY_ARN: emailKey.keyArn,
-        KEY_ALIAS: 'alias/justcooking-kms',
+        KEY_ALIAS: `alias/justcooking-${envName}-kms`,
         RESEND_API_KEY: props.resendApiKey ?? '',
       },
     });
@@ -174,7 +178,7 @@ export class ApiStack extends Stack {
 
     // ---- Cognito user pool (1:1 with original CFN) ----
     const userPool = new cognito.UserPool(this, 'UserPoolV2', {
-      userPoolName: 'justcooking',
+      userPoolName: `justcooking-${envName}`,
       selfSignUpEnabled: true,
       // Original used AliasAttributes email + preferred_username, case-insensitive.
       // Original AliasAttributes [email, preferred_username] — CDK requires
@@ -306,6 +310,7 @@ export class ApiStack extends Stack {
         API_APP_URI: props.appConfig.apiAppUri,
         MEDIA_URI: props.appConfig.mediaUri,
         COOKIE_DOMAIN: props.appConfig.cookieDomain,
+        MONGODB_DB: `justcooking-${envName}`,
         MONGODB_SESSION_DB: props.appConfig.sessionDbName,
         MONGODB_SESSION_COLLECTION: props.appConfig.sessionCollection,
         AWS_S3_BUCKET_NAME: imageBucket.bucketName,

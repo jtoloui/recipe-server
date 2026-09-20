@@ -22,6 +22,7 @@ export class newConfig {
       port: process.env.PORT || '3001',
       logLevel: process.env.LOG_LEVEL as z.infer<typeof ConfigSchema.shape.logLevel>,
       mongoUri: process.env.MONGODB_URI || '',
+      mongoDbName: process.env.MONGODB_DB || 'justcooking-dev',
       sessionDBName: process.env.MONGODB_SESSION_DB || '',
       sessionCollection: process.env.MONGODB_SESSION_COLLECTION || '',
       awsRegion: process.env.AWS_REGION || '',

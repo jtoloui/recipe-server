@@ -20,7 +20,7 @@ class DBConnection {
     try {
       await mongoose.connect(this.cfg.mongoUri, {
         autoCreate: true,
-        dbName: 'recipe',
+        dbName: this.cfg.mongoDbName,
         appName: 'recipe-api',
       });
       this.winstonLogger.info('MongoDB connected successfully');
