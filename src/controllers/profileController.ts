@@ -35,12 +35,21 @@ export class ProfileController implements Profile {
   constructor(config: profileControllerConfig) {
     this.logger = config.logger;
     this.response = new ResponseHandler({ logger: this.logger });
+    // Omit credentials on Lambda (no static keys) so the SDK uses the execution
+    // role via the default provider chain; empty-string keys would override the
+    // chain -> "security token invalid". Static keys are local-dev only and are
+    // resolved to '' on Lambda by config.ts.
+    const useStaticKeys = !!config.accessKeyId && !!config.secretAccessKey;
     this.client = new CognitoIdentityServiceProvider({
       region: config.cognitoRegion,
-      credentials: {
-        accessKeyId: config.accessKeyId || '',
-        secretAccessKey: config.secretAccessKey || '',
-      },
+      ...(useStaticKeys
+        ? {
+            credentials: {
+              accessKeyId: config.accessKeyId as string,
+              secretAccessKey: config.secretAccessKey as string,
+            },
+          }
+        : {}),
     });
   }
 
