@@ -103,8 +103,13 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
       // On Lambda there are no static keys: omit credentials so the SDK uses the
       // execution role via the default provider chain. Passing empty-string keys
       // overrides the chain and yields "security token is invalid".
+      // Never use the reserved Lambda runtime creds (they lack the session token
+      // here) — on Lambda, omit creds and use the execution role. Static keys are
+      // local-dev only. AWS_LAMBDA_FUNCTION_NAME is set iff running in Lambda.
       const useStaticKeys =
-        !!process.env.AWS_ACCESS_KEY_ID && !!process.env.AWS_SECRET_ACCESS_KEY;
+        !process.env.AWS_LAMBDA_FUNCTION_NAME &&
+        !!process.env.AWS_ACCESS_KEY_ID &&
+        !!process.env.AWS_SECRET_ACCESS_KEY;
       const client = new CognitoIdentityProvider({
         region: process.env.AWS_REGION,
         ...(useStaticKeys

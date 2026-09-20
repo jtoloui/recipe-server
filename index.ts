@@ -20,8 +20,22 @@ import { corsOptions } from './src/utils/cors';
 const config = new newConfig(logger, process.env.LOG_LEVEL).validate().getConfig();
 
 const dbConnection = new DBConnection(config);
-dbConnection.connectDB();
-dbConnection.connectSessionStore();
+// Fire the startup DB connect but never let its rejection escape to the runtime.
+// On Lambda an un-awaited, un-caught connectDB() rejection (e.g. a cold-start
+// Atlas timeout) becomes an unhandledRejection -> Runtime.ExitError, crashing the
+// container before it can serve even /api/health. Swallow-and-log here so the
+// server still binds; mongoose's readyState guard reconnects on a warm invocation.
+dbConnection.connectDB().catch((err) => {
+  // eslint-disable-next-line no-console
+  console.error('[startup] initial MongoDB connect failed, continuing:', err);
+});
+// connectSessionStore() assigns this.store synchronously (so getSessionStore()
+// below is safe) and its internal store.all() already logs-without-throwing;
+// still guard the returned promise so nothing escapes.
+dbConnection.connectSessionStore().catch((err) => {
+  // eslint-disable-next-line no-console
+  console.error('[startup] session store init failed, continuing:', err);
+});
 const store = dbConnection.getSessionStore();
 
 const app: Express = express();

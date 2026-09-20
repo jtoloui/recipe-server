@@ -29,8 +29,20 @@ export class newConfig {
       awsCognitoUserPoolId: process.env.AWS_COGNITO_USER_POOL_ID || '',
       awsCognitoClientId: process.env.AWS_COGNITO_CLIENT_ID || '',
       awsCognitoDomain: process.env.AWS_COGNITO_DOMAIN || '',
-      awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-      awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+      // On Lambda, AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are RESERVED runtime
+      // vars holding the execution role's TEMPORARY creds (ASIA...), which are
+      // only valid together with AWS_SESSION_TOKEN. Copying just key+secret (as
+      // the SDK client builders do) drops the session token -> InvalidAccessKeyId.
+      // So on Lambda we resolve these to '' and let every SDK client fall back to
+      // the default provider chain (the role, with its session token). Static
+      // keys remain supported for LOCAL dev only. AWS_LAMBDA_FUNCTION_NAME is set
+      // iff running inside Lambda.
+      awsAccessKeyId: process.env.AWS_LAMBDA_FUNCTION_NAME
+        ? ''
+        : process.env.AWS_ACCESS_KEY_ID || '',
+      awsSecretAccessKey: process.env.AWS_LAMBDA_FUNCTION_NAME
+        ? ''
+        : process.env.AWS_SECRET_ACCESS_KEY || '',
       awsS3BucketName: process.env.AWS_S3_BUCKET_NAME || '',
       cookieDomain: process.env.COOKIE_DOMAIN || '',
       TZ: process.env.TZ || '',
