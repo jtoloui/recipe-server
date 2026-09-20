@@ -1,0 +1,88 @@
+name: Deploy API (prod)
+
+# Auto-deploy the API to prod on every push to main. Uses GitHub OIDC to assume
+# a scoped IAM role (no static AWS keys stored in GitHub). Deploy-time secrets
+# are read from SSM at runtime and masked so they never appear in logs.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Required for OIDC token issuance.
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-api-prod
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-west-2
+  ACCOUNT: '276663280738'
+  CERT_ARN: arn:aws:acm:us-east-1:276663280738:certificate/88daa777-0a83-42f3-af53-0e496af88cf7
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure AWS credentials (OIDC, no static keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::276663280738:role/github-deploy-server
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install infra deps
+        working-directory: infra
+        run: npm ci || npm install
+
+      - name: Build Lambda bundle
+        working-directory: infra
+        run: npm run build:lambda
+
+      - name: Read deploy-time secrets from SSM (masked)
+        run: |
+          set -euo pipefail
+          # Fetch each secret, register it as a masked value, and pass it forward
+          # via $GITHUB_ENV. Never echo the value itself.
+          GOOGLE_SECRET=$(aws ssm get-parameter --name /justcooking/prod/google-client-secret --with-decryption --query Parameter.Value --output text)
+          echo "::add-mask::$GOOGLE_SECRET"
+          echo "GOOGLE_CLIENT_SECRET=$GOOGLE_SECRET" >> "$GITHUB_ENV"
+          RESEND_KEY=$(aws ssm get-parameter --name /justcooking/prod/resend-api-key --with-decryption --query Parameter.Value --output text)
+          echo "::add-mask::$RESEND_KEY"
+          echo "RESEND_API_KEY=$RESEND_KEY" >> "$GITHUB_ENV"
+
+      - name: CDK deploy (API + Media + MediaCert, prod)
+        working-directory: infra
+        run: |
+          set -euo pipefail
+          npx cdk deploy \
+            JustCookingMediaCertProd JustCookingApiProd JustCookingMediaProd \
+            --require-approval never --concurrency 1 \
+            -c account="$ACCOUNT" -c env=prod \
+            -c certArn="$CERT_ARN" \
+            -c googleClientSecret="$GOOGLE_CLIENT_SECRET" \
+            -c resendApiKey="$RESEND_API_KEY" \
+            -c apiAppUri=https://api.justcook.ing \
+            -c webAppUri=https://www.justcook.ing \
+            -c cookieDomain=justcook.ing \
+            -c cognitoCustomDomain=idp.justcook.ing \
+            -c feDomain=www.justcook.ing \
+            -c apiDomain=api.justcook.ing \
+            -c imageBucketName=justcookingapiprod-imagebucket97210811-ihkb7uxzpjvz \
+            -c callbackUrls=https://api.justcook.ing/api/auth/callback \
+            -c logoutUrls=https://www.justcook.ing,https://www.justcook.ing/welcome
+
+      - name: Smoke test /api/health
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w "%{http_code}" https://api.justcook.ing/api/health)
+          echo "health -> $code"
+          test "$code" = "200"
