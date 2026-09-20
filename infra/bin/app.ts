@@ -25,8 +25,8 @@ const account =
   app.node.tryGetContext('account') ?? process.env.CDK_DEFAULT_ACCOUNT;
 const region = app.node.tryGetContext('region') ?? 'eu-west-2';
 
-// SSM param root: prod nests under /justcooking/prod, dev stays at /justcooking.
-const ssmBase = env === 'prod' ? '/justcooking/prod' : '/justcooking';
+// SSM param root: uniform per-env nesting -> /justcooking/<env>/*.
+const ssmBase = `/justcooking/${env}`;
 
 // Per-env custom-domain defaults (still overridable by their -c context keys).
 const domainDefaults =
