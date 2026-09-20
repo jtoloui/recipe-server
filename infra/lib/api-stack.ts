@@ -363,6 +363,20 @@ export class ApiStack extends Stack {
       }),
     );
 
+    // The API calls Bedrock (Converse) to estimate recipe nutrition, using the
+    // Lambda role. Scoped to the EU Claude Haiku 4.5 cross-region inference
+    // profile plus the underlying foundation models it routes to.
+    fn.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['bedrock:InvokeModel'],
+        resources: [
+          `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0`,
+          'arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0',
+        ],
+      }),
+    );
+
     // CORS is handled by the Express app (src/utils/cors.ts, credentialed +
     // keyed to WEB_APP_URI). Do NOT also set CORS on the Function URL, or both
     // layers emit Access-Control-Allow-Origin and the browser rejects the pair.
