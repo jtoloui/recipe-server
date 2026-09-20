@@ -1,0 +1,11 @@
+{
+  "name": "justcooking-email-sender",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cognito CustomEmailSender + PostConfirmation trigger — decrypts codes via AWS Encryption SDK + KMS, sends via Resend. Ported 1:1 from JustCookingProd-function.",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-crypto/client-node": "^4.0.0",
+    "base64-js": "^1.5.1"
+  }
+}
