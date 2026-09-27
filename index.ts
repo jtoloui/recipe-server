@@ -29,9 +29,9 @@ dbConnection.connectDB().catch((err) => {
   // eslint-disable-next-line no-console
   console.error('[startup] initial MongoDB connect failed, continuing:', err);
 });
-// connectSessionStore() assigns this.store synchronously (so getSessionStore()
-// below is safe) and its internal store.all() already logs-without-throwing;
-// still guard the returned promise so nothing escapes.
+// connectSessionStore() installs a lazy retrying store synchronously, so
+// getSessionStore() below is safe. The store shares the liveness-checked
+// Mongoose client and establishes its collection on the first session operation.
 dbConnection.connectSessionStore().catch((err) => {
   // eslint-disable-next-line no-console
   console.error('[startup] session store init failed, continuing:', err);

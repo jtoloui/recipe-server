@@ -1,9 +1,11 @@
 import MongoStore from 'connect-mongo';
 import dotenv from 'dotenv';
+import type { Store } from 'express-session';
 import mongoose from 'mongoose';
 
 import logger from '../logger/winston';
 import { ConfigType } from '../types/config/config';
+import { ResilientSessionStore } from './resilientSessionStore';
 
 dotenv.config();
 
@@ -15,7 +17,7 @@ mongoose.set('bufferCommands', false);
 
 class DBConnection {
   private cfg: ConfigType;
-  private store: MongoStore | null = null;
+  private store: Store | null = null;
   private winstonLogger = logger(process.env.LOG_LEVEL || 'info', 'database');
 
   constructor(cfg: ConfigType) {
@@ -90,38 +92,27 @@ class DBConnection {
 
   async connectSessionStore(): Promise<this> {
     if (!this.store) {
-      this.store = MongoStore.create({
-        mongoUrl: this.cfg.mongoUri,
-        dbName: this.cfg.sessionDBName,
-        collectionName: this.cfg.sessionCollection,
-        ttl: 1000 * 60 * 60 * 24 * 7, // 1 week
-        stringify: false,
-        // Match the connectDB pool/selection behaviour so the session store
-        // also fails fast rather than hanging on a dead socket.
-        mongoOptions: {
-          serverSelectionTimeoutMS: 5000,
-          socketTimeoutMS: 45000,
-          maxPoolSize: 5,
-          minPoolSize: 0,
-          maxIdleTimeMS: 60000,
-        },
+      this.store = new ResilientSessionStore(async () => {
+        // Share Mongoose's liveness-checked client instead of creating an
+        // independent connect-mongo pool. If this connection or the resulting
+        // store fails, ResilientSessionStore discards it and retries rather
+        // than caching a rejected collection promise for the warm container.
+        await this.connectDB();
+        const client = mongoose.connection.getClient();
+        return MongoStore.create({
+          client: client as unknown as Parameters<typeof MongoStore.create>[0]['client'],
+          dbName: this.cfg.sessionDBName,
+          collectionName: this.cfg.sessionCollection,
+          ttl: 60 * 60 * 24 * 7, // connect-mongo expects seconds
+          stringify: false,
+        });
       });
-      this.store.all((error, sessions) => {
-        if (error) {
-          // Log but do not exit the process — a transient session-store read
-          // error must not kill the Lambda container.
-          this.winstonLogger.error(error);
-          return;
-        }
-        if (sessions) {
-          this.winstonLogger.info('MongoDB session store connected');
-        }
-      });
+      this.winstonLogger.info('Resilient MongoDB session store initialized');
     }
-    return this; // Enable method chaining
+    return this;
   }
 
-  getSessionStore(): MongoStore {
+  getSessionStore(): Store {
     if (!this.store) {
       throw new Error('Session store is not initialized. Call connectSessionStore() first.');
     }
