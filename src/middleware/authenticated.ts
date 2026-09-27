@@ -8,6 +8,7 @@ import { JwtExpiredError } from 'aws-jwt-verify/error';
 
 import { verifyIdToken } from '../auth/verifier';
 import logger from '../logger/winston';
+import { clearAuthCookies, destroyAuthSession, setAppSessionCookie } from '../utils/authCookies';
 
 const winstonLogger = logger('info', 'Authentication Middleware');
 
@@ -35,23 +36,31 @@ function isExpiredError(err: unknown): boolean {
  * refresh via the stored refresh token instead of 401-ing; only a genuine
  * verification failure (bad signature/audience) or a failed refresh rejects.
  */
+async function invalidateSession(req: Request, res: Response): Promise<void> {
+  clearAuthCookies(res);
+  const error = await destroyAuthSession(req);
+  if (error) {
+    winstonLogger.warn(`[isAuthenticated]: failed to destroy invalid session: ${error}`);
+  }
+}
+
 export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.session?.user?.username || !req.cookies?.app_session || !req.session.user) {
       winstonLogger.error(`[isAuthenticated]: Forbidden - No token provided`);
+      await invalidateSession(req, res);
       return res.status(401).json({ message: 'Forbidden: No token provided' });
     }
 
-    // A5 (softened): the app_session cookie is expected to match the access
-    // token we issued, but a MISMATCH is no longer a hard 401. The real gate is
-    // the cryptographic verifyIdToken() below; the cookie equality was
-    // defense-in-depth. Hard-rejecting on drift broke every returning user
-    // (login set app_session as a non-persistent cookie while the express
-    // session — holding AccessToken — persisted 7 days, so the two legitimately
-    // diverged). Log the mismatch and let token verification decide.
+    // Keep the app cookie bound to the access token in the signed server-side
+    // session. Canonical cookie attributes prevent legitimate drift; a mismatch
+    // means the browser must establish a fresh authenticated session.
     const expectedAppSession = req.session.user.tokens.AccessToken;
-    if (!expectedAppSession || !safeEqual(req.cookies.app_session, expectedAppSession)) {
-      winstonLogger.warn(`[isAuthenticated]: app_session cookie does not match session token — continuing to token verification`);
+    const cookieMatches = !!expectedAppSession && safeEqual(req.cookies.app_session, expectedAppSession);
+    if (!cookieMatches) {
+      winstonLogger.warn(`[isAuthenticated]: app_session cookie does not match session token — re-login required`);
+      await invalidateSession(req, res);
+      return res.status(401).json({ message: 'Forbidden: Session mismatch' });
     }
 
     try {
@@ -60,6 +69,7 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
       // A6: only an EXPIRED token is refreshable; a bad signature/audience is not.
       if (!isExpiredError(verifyError)) {
         winstonLogger.error(`[isAuthenticated]: Forbidden - Invalid token: ${verifyError}`);
+        await invalidateSession(req, res);
         return res.status(401).json({ message: 'Forbidden: Invalid token' });
       }
 
@@ -69,19 +79,15 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
         await verifyIdToken(refreshed.IdToken);
 
         // Persist the new tokens on the session and re-issue the app_session
-        // cookie so the A5 check keeps matching on subsequent requests.
+        // cookie using the same canonical attributes as every login path.
         req.session.user.tokens.IdToken = refreshed.IdToken;
         req.session.user.tokens.AccessToken = refreshed.AccessToken;
         if (refreshed.RefreshToken) req.session.user.tokens.RefreshToken = refreshed.RefreshToken;
-        // Same cookie attributes as the login set-sites (authController) for consistency.
-        res.cookie('app_session', refreshed.AccessToken, {
-          httpOnly: true,
-          secure: true,
-          domain: `.${process.env.COOKIE_DOMAIN}`,
-        });
+        setAppSessionCookie(res, refreshed.AccessToken);
         winstonLogger.info(`[isAuthenticated]: refreshed expired token for ${req.session.user.sub}`);
       } catch (refreshError) {
         winstonLogger.warn(`[isAuthenticated]: refresh failed, re-login required: ${refreshError}`);
+        await invalidateSession(req, res);
         return res.status(401).json({ message: 'Forbidden: Session expired' });
       }
     }
@@ -89,6 +95,7 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
     return next();
   } catch (error) {
     winstonLogger.error(`[isAuthenticated]: Unauthorized - [UserId]: ${req.session?.user?.sub} - ${error}`);
+    await invalidateSession(req, res);
     return res.status(401).json({ message: 'Unauthorized: Invalid token' });
   }
 };

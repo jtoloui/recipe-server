@@ -22,6 +22,7 @@ import { Logger } from 'winston';
 
 import { poolData, userPool } from '../auth/awsCognito';
 import { authControllerConfig } from '../types/controller/controller';
+import { clearAuthCookies, destroyAuthSession, setAppSessionCookie } from '../utils/authCookies';
 import ResponseHandler from '../utils/responseHandler';
 
 type deleteUserBody = {
@@ -204,16 +205,7 @@ export class AuthController implements Auth {
           userGroups,
         };
 
-        res.cookie('app_session', accessToken, {
-          httpOnly: true,
-          secure: true, // Uncomment this line if you are using HTTPS
-          domain: `.${process.env.COOKIE_DOMAIN}`,
-          // Persist alongside the 7-day express session (index.ts). Without a
-          // maxAge the cookie was session-scoped and dropped on browser close,
-          // while connect.sid survived 7 days -> returning users hit the A5
-          // mismatch / "No token provided" 401. Keep lifetimes in sync.
-          maxAge: 1000 * 60 * 60 * 24 * 7,
-        });
+        setAppSessionCookie(res, accessToken);
 
         return res.status(200).json({
           message: 'User logged in',
@@ -257,9 +249,14 @@ export class AuthController implements Auth {
   };
 
   logout = async (req: Request, res: Response) => {
-    const { user } = req.session;
+    const user = req.session?.user;
     if (!user) {
       this.logger.error('Not logged in');
+      clearAuthCookies(res);
+      const sessionError = await destroyAuthSession(req);
+      if (sessionError) {
+        this.logger.error('Error destroying invalid logout session:', sessionError);
+      }
       return this.response.sendError(res, 401, 'Not logged in');
     }
 
@@ -270,19 +267,22 @@ export class AuthController implements Auth {
     } = user;
     if (!IdToken) {
       this.logger.error('Invalid session');
+      clearAuthCookies(res);
+      const sessionError = await destroyAuthSession(req);
+      if (sessionError) {
+        this.logger.error('Error destroying invalid logout session:', sessionError);
+      }
       return this.response.sendError(res, 401, 'Invalid session');
     }
 
     if (authType === 'social') {
-      req.session.destroy((err) => {
-        if (err) {
-          this.logger.error('(Social) Error logging out:', err);
+      clearAuthCookies(res);
+      const sessionError = await destroyAuthSession(req);
+      if (sessionError) {
+        this.logger.error('(Social) Error logging out:', sessionError);
+        return this.response.sendError(res, 500, 'Error logging out', sessionError);
+      }
 
-          return this.response.sendError(res, 500, 'Error logging out', err);
-        }
-      });
-
-      res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
       const logoutGoogle = `${process.env.AWS_COGNITO_DOMAIN}/logout?client_id=${process.env.AWS_COGNITO_CLIENT_ID}&logout_uri=${process.env.WEB_APP_URI}`;
 
       return this.response.sendSuccess(res, {
@@ -304,20 +304,22 @@ export class AuthController implements Auth {
     );
 
     cognitoUser.globalSignOut({
-      onSuccess: (mes) => {
-        req.session.destroy((err) => {
-          if (err) {
-            this.logger.error('(Cognito) Error logging out:', err);
-
-            return this.response.sendErrorNonJSON(res, 500, 'Error logging out');
-          }
-        });
-        res.clearCookie('app_session').clearCookie('connect.sid'); // Clear the access token cookie
+      onSuccess: async () => {
+        clearAuthCookies(res);
+        const sessionError = await destroyAuthSession(req);
+        if (sessionError) {
+          this.logger.error('(Cognito) Error logging out:', sessionError);
+          return this.response.sendErrorNonJSON(res, 500, 'Error logging out');
+        }
         return this.response.sendSuccessNonJSON(res, 'Logged out successfully');
       },
-      onFailure: (err) => {
+      onFailure: async (err) => {
         this.logger.error('(Cognito) Error logging out:', err);
-
+        clearAuthCookies(res);
+        const sessionError = await destroyAuthSession(req);
+        if (sessionError) {
+          this.logger.error('(Cognito) Error destroying failed-login session:', sessionError);
+        }
         return this.response.sendErrorNonJSON(res, 500, 'Error logging out');
       },
     });
@@ -551,16 +553,26 @@ export class AuthController implements Auth {
         },
       };
 
-      res.cookie('app_session', access_token, {
-        httpOnly: true,
-        secure: true,
-      });
+      setAppSessionCookie(res, access_token);
       return res.redirect(process.env.WEB_APP_URI || '');
     } catch (error) {
       this.logger.error('Error getting tokens:', error);
 
       res.status(500).send(JSON.stringify(error));
     }
+  };
+
+  private respondUnauthenticated = async (req: Request, res: Response) => {
+    clearAuthCookies(res);
+
+    // Invalid client state should resolve as unauthenticated, not as a 500.
+    // Await best-effort server cleanup so the response cannot race it.
+    const sessionError = await destroyAuthSession(req);
+    if (sessionError) {
+      this.logger.error('Error destroying session:', sessionError);
+    }
+
+    return res.status(200).json({ isAuthenticated: false });
   };
 
   isAuthenticated = async (req: Request, res: Response) => {
@@ -570,24 +582,12 @@ export class AuthController implements Auth {
       const userName = req.session?.user?.username;
 
       if (!sessionToken || !userName || !cookieToken) {
-        req.session.destroy((err) => {
-          if (err) {
-            this.logger.error('Error destroying session:', err);
-            return res.status(500).json({ isAuthenticated: false });
-          }
-        });
-        return res.status(200).json({ isAuthenticated: false });
+        return this.respondUnauthenticated(req, res);
       }
       const decoded = jwt.decode(sessionToken);
 
       if (typeof decoded !== 'object' || decoded === null) {
-        req.session.destroy((err) => {
-          if (err) {
-            this.logger.error('Error destroying session:', err);
-            return res.status(500).json({ isAuthenticated: false });
-          }
-        });
-        return res.status(200).json({ isAuthenticated: false });
+        return this.respondUnauthenticated(req, res);
       }
 
       // Validate the session from the signed ID token (expiry). This avoids an
@@ -597,25 +597,13 @@ export class AuthController implements Auth {
       const isExpired = this.isExpired(sessionToken);
 
       if (isExpired) {
-        req.session.destroy((err) => {
-          if (err) {
-            this.logger.error('Error destroying session:', err);
-            return res.status(500).json({ isAuthenticated: false });
-          }
-        });
-        return res.status(200).json({ isAuthenticated: false });
+        return this.respondUnauthenticated(req, res);
       }
 
       return res.status(200).json({ isAuthenticated: true });
     } catch (error) {
       this.logger.error('Error getting tokens:', error);
-      req.session.destroy((err) => {
-        if (err) {
-          this.logger.error('Error destroying session:', err);
-          return res.status(500).json({ isAuthenticated: false });
-        }
-      });
-      return res.status(500).json({ isAuthenticated: false });
+      return this.respondUnauthenticated(req, res);
     }
   };
 
