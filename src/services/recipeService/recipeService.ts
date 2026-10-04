@@ -3,6 +3,7 @@ import { Request } from 'express';
 import mongoose, { Document, FilterQuery, MongooseError } from 'mongoose';
 import { Logger } from 'winston';
 import { z } from 'zod';
+import { visibleToUser } from '@/utils/visibility';
 
 import { s3Client } from '@/auth/awsS3';
 import { RecipeAttributes, Recipe as RecipeType } from '@/models/recipe';
@@ -40,7 +41,7 @@ interface Recipe {
     search?: string,
     label?: string,
   ) => Promise<GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'>>;
-  getRecipeById: (id: string) => Promise<RecipeType | null>;
+  getRecipeById: (id: string, userId?: string) => Promise<RecipeType | null>;
   createRecipe: (payload: Request<any, any, CreateRecipeFormDataRequest>, user: User) => Promise<RecipeType>;
   updateRecipe: (payload: Request<any, any, CreateRecipeFormDataRequest>, user: User) => Promise<RecipeType>;
 }
@@ -191,7 +192,8 @@ export class RecipeService implements Recipe {
     }
   }
 
-  async getRecipeById(id: string): Promise<RecipeType | null> {
+  /** Returns the recipe only if `userId` may see it (public, legacy, or own); otherwise null. */
+  async getRecipeById(id: string, userId?: string): Promise<RecipeType | null> {
     try {
       const findReturnItems: {
         [K in keyof Partial<RecipeAttributes>]: number;
@@ -214,7 +216,7 @@ export class RecipeService implements Recipe {
         visibility: 1,
         source: 1,
       };
-      return await this.store.getRecipeById(id, findReturnItems);
+      return await this.store.getVisibleRecipeById(id, visibleToUser(userId), findReturnItems);
     } catch (error) {
       if (error instanceof MongooseError && error.name === 'CastError') {
         this.logger.debug(`Invalid recipe ID: ${id}`);

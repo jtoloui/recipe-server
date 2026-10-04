@@ -4,6 +4,8 @@ import { Logger } from 'winston';
 import RecipeModel, { RecipeAttributes } from '../models/recipe';
 import { groupRecipesByLabel } from '../queries';
 import { controllerConfig } from '../types/controller/controller';
+import { escapeRegex } from '../store/utils/queryBuilder';
+import { visibleToUser } from '../utils/visibility';
 import ResponseHandler from '../utils/responseHandler';
 
 type getRecipesByLabelParams = {
@@ -27,7 +29,10 @@ export class LabelController implements Label {
 
   getLabels = async (req: Request, res: Response) => {
     try {
-      const labels = await RecipeModel.aggregate(groupRecipesByLabel);
+      const labels = await RecipeModel.aggregate([
+        { $match: visibleToUser(req.session?.user?.sub) },
+        ...groupRecipesByLabel,
+      ]);
       const labelsResponse = { ...labels[0] };
 
       return this.response.sendSuccess(res, labelsResponse);
@@ -55,7 +60,7 @@ export class LabelController implements Label {
       );
 
       if (label.toLocaleLowerCase() === 'all') {
-        const recipes = await RecipeModel.find({}, findReturnItems);
+        const recipes = await RecipeModel.find(visibleToUser(req.session?.user?.sub), findReturnItems);
         const recipesWithTotalTime = recipes.map((recipe) => {
           const totalHours = recipe.timeToCook.totalHours || 0;
           const totalMinutes = recipe.timeToCook.totalMinutes || 0;
@@ -68,7 +73,15 @@ export class LabelController implements Label {
 
         return this.response.sendSuccess(res, recipesWithTotalTime);
       }
-      const recipes = await RecipeModel.find({ labels: { $regex: new RegExp(`^${label}$`, 'i') } }, findReturnItems);
+      const recipes = await RecipeModel.find(
+        {
+          $and: [
+            { labels: { $regex: new RegExp(`^${escapeRegex(label)}$`, 'i') } },
+            visibleToUser(req.session?.user?.sub),
+          ],
+        },
+        findReturnItems,
+      );
       const recipesWithTotalTime = recipes.map((recipe) => {
         const totalHours = recipe.timeToCook.totalHours || 0;
         const totalMinutes = recipe.timeToCook.totalMinutes || 0;
@@ -87,6 +100,7 @@ export class LabelController implements Label {
   getPopularLabels = async (req: Request, res: Response) => {
     try {
       const popularLabels = await RecipeModel.aggregate([
+        { $match: visibleToUser(req.session?.user?.sub) },
         { $unwind: '$labels' },
         {
           $group: {

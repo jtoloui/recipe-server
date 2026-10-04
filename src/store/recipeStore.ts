@@ -12,6 +12,11 @@ interface Recipe {
     filter?: FilterQuery<RecipeType>,
     fields?: T[],
   ): Promise<(Pick<RecipeType, T> & Document)[]>;
+  getVisibleRecipeById: (
+    id: string,
+    visibility: FilterQuery<RecipeType>,
+    projections?: ProjectionType<RecipeType> | null,
+  ) => Promise<RecipeType | null>;
   getRecipeById: (
     id: string,
     projections?: ProjectionType<RecipeType> | null,
@@ -41,6 +46,15 @@ export class RecipeStore implements Recipe {
 
     const recipes = RecipeModel.find(filter, projection);
     return await recipes;
+  }
+
+  /** findById plus a visibility filter, so hidden recipes look like "not found". */
+  async getVisibleRecipeById(
+    id: string,
+    visibility: FilterQuery<RecipeType>,
+    projections: ProjectionType<RecipeType> | null = {},
+  ) {
+    return await RecipeModel.findOne({ $and: [{ _id: id }, visibility] }, projections);
   }
 
   async getRecipeById(id: string, projections: ProjectionType<RecipeType> | null = {}, session?: ClientSession) {

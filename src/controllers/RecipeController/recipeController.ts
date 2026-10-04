@@ -84,7 +84,8 @@ export class RecipeController implements Recipe {
         },
       );
 
-      const recipe = await this.service.getRecipeById(req.params.id);
+      // Private recipes of other users return 404, indistinguishable from missing.
+      const recipe = await this.service.getRecipeById(req.params.id, req.session?.user?.sub);
 
       if (!recipe) {
         return this.response.sendError(res, 404, 'Recipe not found');

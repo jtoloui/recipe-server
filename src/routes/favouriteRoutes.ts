@@ -5,11 +5,7 @@ import { isAuthenticated } from '@/middleware/authenticated';
 import FavouriteModel from '@/models/favourite';
 import RecipeModel from '@/models/recipe';
 import { ConfigType } from '@/types/config/config';
-
-/** Recipes a user may see: public (or legacy, no visibility) or their own. */
-const visibleTo = (userId: string) => ({
-  $or: [{ 'visibility.public': true }, { visibility: { $exists: false } }, { creatorId: userId }],
-});
+import { visibleToUser as visibleTo } from '@/utils/visibility';
 
 const CARD_FIELDS = { name: 1, labels: 1, image: 1, ingredients: 1, timeToCook: 1 } as const;
 /** Upper bound on a single favourites response (keeps queries and payloads bounded). */
