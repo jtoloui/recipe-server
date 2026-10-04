@@ -110,10 +110,17 @@ export class RecipeService implements Recipe {
 
       const fields = assertFields(['name', 'labels', 'image', 'ingredients', 'timeToCook']);
       // Independent reads — run in parallel instead of three sequential round-trips (D3).
+      // Always $match: label counts, tile images and totals must only reflect
+      // recipes this user can actually see (and, for availableLabels, the
+      // current search). The label filter itself is excluded from
+      // availableLabels so the other labels stay selectable.
+      const visibleOnly: FilterQuery<RecipeType> = {
+        $or: [{ 'visibility.public': true }, { visibility: { $exists: false } }],
+      };
       const [recipeQueryResults, labelsFromQueryResults, allLabels] = await Promise.all([
         this.store.getAllRecipes(queryConditions, fields),
-        this.store.getLabelFromQuery(matchingLabelsCondition, !!search),
-        this.store.getLabelFromQuery(queryConditions, false),
+        this.store.getLabelFromQuery(matchingLabelsCondition, true),
+        this.store.getLabelFromQuery(visibleOnly, true),
       ]);
 
       const response: GetAllRecipesServiceResponse<'name' | 'labels' | 'image' | 'ingredients' | 'timeToCook'> = {

@@ -118,4 +118,32 @@ describe('recipe visibility', () => {
       expect(res.body).toEqual([]);
     });
   });
+
+  describe('GET /api/recipes metadata', () => {
+    const labelCount = (labels: { label: string; count: number }[], name: string) =>
+      labels.find((l) => l.label === name)?.count ?? 0;
+
+    it('counts only recipes the user can see', async () => {
+      const res = await as('alice')('/api/recipes');
+      expect(res.body.recipes).toHaveLength(2);
+      expect(res.body.meta.totalRecipes).toBe(2);
+      expect(res.body.meta.totalRecipesMatching).toBe(2);
+      expect(labelCount(res.body.meta.availableLabels, 'Secretlabel')).toBe(2);
+      expect(labelCount(res.body.meta.allLabels, 'Secretlabel')).toBe(2);
+    });
+
+    it('returns no available labels when a search matches nothing', async () => {
+      const res = await as('alice')('/api/recipes?search=zzznothing');
+      expect(res.body.recipes).toHaveLength(0);
+      expect(res.body.meta.availableLabels).toEqual([]);
+      expect(res.body.meta.totalRecipesMatching).toBe(0);
+    });
+
+    it('scopes available labels to the search', async () => {
+      const res = await as('alice')('/api/recipes?search=Legacy');
+      expect(res.body.recipes.map((r: { name: string }) => r.name)).toEqual(['Legacy']);
+      expect(res.body.meta.totalRecipesMatching).toBe(1);
+      expect(labelCount(res.body.meta.availableLabels, 'Secretlabel')).toBe(1);
+    });
+  });
 });
