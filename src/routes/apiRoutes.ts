@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { ConfigType } from '@/types/config/config';
 
 import { authRoutes } from './authRoutes';
+import { favouriteRoutes } from './favouriteRoutes';
 import { healthRoutes } from './healthRoutes';
 import { labelRoutes } from './labelRoutes';
 import { measurementsRoutes } from './measurementsRoutes';
@@ -20,6 +21,7 @@ export const apiRoutes = (config: ConfigType) => {
   // matched ahead of the GET /recipes/:id route.
   router.use('/recipes/nutrition', nutritionRoutes(config));
   router.use('/recipes', recipeRoutes(config));
+  router.use('/favourites', favouriteRoutes(config));
   router.use('/labels', labelRoutes(config));
   router.use('/measurements', measurementsRoutes(config));
 
