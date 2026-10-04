@@ -36,8 +36,16 @@ if (existsSync(path.join(server, 'package-lock.json'))) {
   );
 }
 
-console.log('▶ installing prod deps in lambda-dist…');
-run('npm install --omit=dev --legacy-peer-deps --no-audit --no-fund', out);
+console.log('▶ installing prod deps in lambda-dist (linux arm64 binaries)…');
+// The Lambda runs on Graviton (linux/arm64, glibc) while CI builds on x64 —
+// select the matching native optional deps (e.g. sharp's @img/sharp-linux-arm64).
+run(
+  'npm install --omit=dev --legacy-peer-deps --no-audit --no-fund --os=linux --cpu=arm64 --libc=glibc',
+  out
+);
+if (!existsSync(path.join(out, 'node_modules', '@img', 'sharp-linux-arm64'))) {
+  throw new Error('sharp linux-arm64 binary missing from lambda-dist');
+}
 
 console.log('▶ adding LWA run.sh…');
 cpSync(path.join(infra, 'lambda', 'run.sh'), path.join(out, 'run.sh'));

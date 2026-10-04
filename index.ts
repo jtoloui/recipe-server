@@ -11,6 +11,8 @@ import * as uuid from 'uuid';
 
 import { newConfig } from './src/config/config';
 import { DBConnection } from './src/db';
+import { s3Client } from './src/auth/awsS3';
+import { createShareRoutes } from './src/og/shareRoutes';
 import logger from './src/logger/winston';
 import assignId from './src/middleware/requestId';
 // routes
@@ -41,6 +43,8 @@ const store = dbConnection.getSessionStore();
 const app: Express = express();
 const port = process.env.PORT;
 
+app.disable('x-powered-by');
+
 // allow proxy from cloudfare
 app.set('trust proxy', 1);
 
@@ -52,6 +56,23 @@ const domainRootWithDot = `.${domainRoot}`;
 const logLevel = config.logLevel;
 const serverLogger = config.newLogger(logLevel, 'server');
 const winstonLoggerMiddleware = config.newLogger(logLevel, 'Routes');
+
+// Public link-preview routes (WhatsApp/Slack/X crawlers). Mounted before
+// helmet/CORS/session: they need no cookies, serve the SPA's own HTML, and must
+// never create sessions. Only public recipes expose name/description/photo.
+app.use(
+  createShareRoutes({
+    urls: { webBase: config.webAppUri, apiBase: config.apiAppUri },
+    logger: config.newLogger(logLevel, 'share'),
+    connect: () => dbConnection.connectDB(),
+    s3: s3Client({
+      region: config.awsRegion,
+      accessKeyId: config.awsAccessKeyId,
+      secretAccessKey: config.awsSecretAccessKey,
+    }),
+    bucket: config.awsS3BucketName,
+  }),
+);
 
 // middleware - custom
 
