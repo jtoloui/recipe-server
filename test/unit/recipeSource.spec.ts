@@ -42,6 +42,12 @@ describe('recipe source credit', () => {
     expect(result.success).toBe(false);
   });
 
+  it('passes an explicit null through so a credit can be removed', () => {
+    const converted = convertRecipeZodToMongo(createRecipeSchema.parse({ ...baseRecipe, source: null }), image);
+
+    expect(converted.source).toBeNull();
+  });
+
   it('omits source when absent so edits keep the existing credit', () => {
     const converted = convertRecipeZodToMongo(createRecipeSchema.parse(baseRecipe), image);
 

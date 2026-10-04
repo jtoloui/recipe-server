@@ -102,6 +102,8 @@ export const createRecipeSchema = z.object({
         .url('Source URL must be a valid URL')
         .refine((value) => /^https?:\/\//i.test(value), 'Source URL must use http or https'),
     })
+    // null = remove the credit; omitted = keep whatever is stored.
+    .nullable()
     .optional(),
   visibility: z.enum(['public', 'private'], {
     errorMap: (error) => {
@@ -160,8 +162,9 @@ export function convertRecipeZodToMongo(
     vegan: formData.vegan,
     vegetarian: formData.vegetarian,
     cuisine: formData.cuisine,
-    // Only include when supplied so editing a recipe never wipes an existing credit.
-    ...(formData.source ? { source: formData.source } : {}),
+    // Only include when supplied (object or explicit null) so clients that don't
+    // send `source` never wipe an existing credit.
+    ...(formData.source !== undefined ? { source: formData.source } : {}),
     visibility: {
       public: formData.visibility === 'public',
       private: formData.visibility === 'private',
