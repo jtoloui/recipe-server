@@ -57,7 +57,7 @@ export const createRecipeSchema = z.object({
           .number({
             invalid_type_error: 'Quantity must be a number',
           })
-          .min(1, 'Quantity must be at least 1'),
+          .positive('Quantity must be greater than 0'),
       }),
     )
     .min(1, 'You must have at least one ingredient'),
@@ -93,6 +93,16 @@ export const createRecipeSchema = z.object({
     }),
   ),
   labels: z.array(z.string().min(1, 'Must have at least one label')),
+  source: z
+    .object({
+      name: z.string().trim().min(1, "Source name can't be empty"),
+      url: z
+        .string()
+        .trim()
+        .url('Source URL must be a valid URL')
+        .refine((value) => /^https?:\/\//i.test(value), 'Source URL must use http or https'),
+    })
+    .optional(),
   visibility: z.enum(['public', 'private'], {
     errorMap: (error) => {
       switch (error.code) {
@@ -150,6 +160,8 @@ export function convertRecipeZodToMongo(
     vegan: formData.vegan,
     vegetarian: formData.vegetarian,
     cuisine: formData.cuisine,
+    // Only include when supplied so editing a recipe never wipes an existing credit.
+    ...(formData.source ? { source: formData.source } : {}),
     visibility: {
       public: formData.visibility === 'public',
       private: formData.visibility === 'private',

@@ -212,6 +212,7 @@ export class RecipeService implements Recipe {
         nutrition: 1,
         cuisine: 1,
         visibility: 1,
+        source: 1,
       };
       return await this.store.getRecipeById(id, findReturnItems);
     } catch (error) {

@@ -45,6 +45,12 @@ interface Visibility {
   groups: string[];
 }
 
+/** Credit for recipes adapted from another publisher. */
+export interface Source {
+  name: string;
+  url: string;
+}
+
 export interface Recipe extends Document, RecipeAttributes {}
 
 export interface RecipeAttributes {
@@ -68,6 +74,7 @@ export interface RecipeAttributes {
   createdAt: Date;
   updatedAt: Date;
   visibility: Visibility;
+  source?: Source | null;
 }
 
 export type CreateRecipeModelData = Omit<
@@ -228,6 +235,18 @@ const visibilitySchema = new Schema<Visibility>(
   },
 );
 
+const sourceSchema = new Schema<Source>(
+  {
+    name: { type: String, required: true, trim: true },
+    url: { type: String, required: true, trim: true },
+  },
+  {
+    _id: false,
+    toJSON: { virtuals: false },
+    toObject: { virtuals: false },
+  },
+);
+
 const recipeSchema = new Schema<Recipe>(
   {
     name: { type: String, required: true, index: true },
@@ -253,6 +272,7 @@ const recipeSchema = new Schema<Recipe>(
     cuisine: { type: String, required: true },
     creatorId: { type: String, required: true },
     visibility: { type: visibilitySchema, required: true, default: { public: true, private: false, groups: [] } },
+    source: { type: sourceSchema, required: false, default: undefined },
     createdAt: { type: Date, required: false },
     updatedAt: { type: Date, required: false },
     __v: { type: Number, select: false },
