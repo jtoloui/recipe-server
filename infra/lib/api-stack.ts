@@ -203,6 +203,8 @@ export class ApiStack extends Stack {
         requireSymbols: true,
       },
       mfa: cognito.Mfa.OFF,
+      // Prod pool holds real accounts: block accidental deletion (in-place update).
+      deletionProtection: envName === 'prod',
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       customSenderKmsKey: emailKey,
       lambdaTriggers: {
