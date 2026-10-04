@@ -52,3 +52,14 @@ cpSync(path.join(infra, 'lambda', 'run.sh'), path.join(out, 'run.sh'));
 chmodSync(path.join(out, 'run.sh'), 0o755);
 
 console.log('✅ lambda-dist ready:', out);
+
+// Cognito custom email sender Lambda: its asset is infra/lambda-email as-is,
+// so its node_modules must be installed before `cdk deploy` packages it.
+// (Missing deps here = Runtime.ImportModuleError = no signup/reset emails.)
+const emailDir = path.join(infra, 'lambda-email');
+console.log('▶ installing email-sender Lambda deps…');
+run('npm ci --omit=dev --no-audit --no-fund', emailDir);
+if (!existsSync(path.join(emailDir, 'node_modules', '@aws-crypto', 'client-node'))) {
+  throw new Error('email sender deps missing (@aws-crypto/client-node)');
+}
+console.log('✅ lambda-email ready');

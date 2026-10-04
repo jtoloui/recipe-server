@@ -1,4 +1,3 @@
-const b64 = require('base64-js');
 const encryptionSdk = require('@aws-crypto/client-node');
 
 // Configure the encryption SDK client with the KMS key from the environment variables.
@@ -42,6 +41,10 @@ const sendEmail = async (to, subject, message) => {
       body: data,
     };
   }
+  // Surface Resend failures in CloudWatch instead of silently dropping the email.
+  const detail = await res.text().catch(() => '');
+  console.error(`Resend send failed: HTTP ${res.status} ${detail.slice(0, 500)}`);
+  throw new Error(`Resend send failed with HTTP ${res.status}`);
 }
 
 
@@ -52,7 +55,7 @@ exports.handler = async (event) => {
   let plainTextCode;
   if (event.request.code) {
     // Decrypt the secret code using encryption SDK
-    const { plaintext } = await decrypt(keyring, b64.toByteArray(event.request.code));
+    const { plaintext } = await decrypt(keyring, Buffer.from(event.request.code, 'base64'));
     plainTextCode = plaintext
   }
   const email = event.request.userAttributes.email
